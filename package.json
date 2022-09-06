@@ -1,0 +1,17 @@
+{
+  "name": "kucoin-api",
+  "version": "1.0.0",
+  "description": "Kucoin api for Gainium",
+  "main": "index.js",
+  "author": "Maksym Shamko <max.shamko25@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "isomorphic-unfetch": "^3.1.0",
+    "isomorphic-ws": "^5.0.0",
+    "query-string": "^7.1.1",
+    "reconnecting-websocket": "^4.4.0",
+    "uuid": "^9.0.0"
+  }
+}
