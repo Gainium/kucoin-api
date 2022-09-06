@@ -416,7 +416,7 @@ class KucoinApi {
     endpoint: string,
     params: AnyObject,
     method: Methods,
-    type: RequestType
+    type: RequestType,
   ) {
     const headers: { [x: string]: string } = {
       'Content-Type': 'application/json',
@@ -453,7 +453,7 @@ class KucoinApi {
     }
   }
   private async handleResult<T>(
-    result: UnPromise<ReturnType<typeof fetch>>
+    result: UnPromise<ReturnType<typeof fetch>>,
   ): Promise<Result<T>> {
     const text = await result.text()
     if (result.ok) {
@@ -505,7 +505,7 @@ class KucoinApi {
     endpoint: string,
     method: Methods,
     params: AnyObject,
-    type: RequestType
+    type: RequestType,
   ): Promise<Result<T>> {
     if (
       type === 'private' &&
@@ -547,7 +547,7 @@ class KucoinApi {
       '/api/v1/accounts',
       'GET',
       params,
-      'private'
+      'private',
     )
   }
   /* 
@@ -560,7 +560,7 @@ class KucoinApi {
       '/api/v1/orders',
       'POST',
       params,
-      'private'
+      'private',
     )
   }
   /* 
@@ -572,7 +572,7 @@ class KucoinApi {
       `/api/v1/orders/${params.id}`,
       'DELETE',
       {},
-      'private'
+      'private',
     )
   }
   /* 
@@ -584,7 +584,7 @@ class KucoinApi {
       '/api/v1/symbols',
       'GET',
       {},
-      'public'
+      'public',
     )
   }
   /* 
@@ -601,7 +601,7 @@ class KucoinApi {
       '/api/v1/orders',
       'GET',
       params,
-      'private'
+      'private',
     )
   }
   /* 
@@ -613,7 +613,7 @@ class KucoinApi {
       `/api/v1/orders/${params.id}`,
       'GET',
       {},
-      'private'
+      'private',
     )
   }
   /* 
@@ -625,7 +625,7 @@ class KucoinApi {
       `/api/v1/order/client-order/${params.id}`,
       'GET',
       {},
-      'private'
+      'private',
     )
   }
   /* 
@@ -646,7 +646,7 @@ class KucoinApi {
       '/api/v1/fills',
       'GET',
       params || {},
-      'private'
+      'private',
     )
   }
   /*  
@@ -658,7 +658,7 @@ class KucoinApi {
       `/api/v1/market/orderbook/level1?symbol=${symbol}`,
       'GET',
       {},
-      'private'
+      'private',
     )
   }
   /*  
@@ -670,7 +670,7 @@ class KucoinApi {
       `/api/v1/trade-fees?symbols=${symbols.join(',')}`,
       'GET',
       {},
-      'private'
+      'private',
     )
   }
   private async getWsUrl(type: RequestType) {
@@ -682,7 +682,7 @@ class KucoinApi {
       url,
       'POST',
       {},
-      type
+      type,
     )
     if (result.status === OK) {
       const { token, instanceServers } = result.data
@@ -824,7 +824,7 @@ class KucoinApi {
   }
   private async handleUnsubscribe(type: RequestType, topic: string) {
     this.sockets[type].cb = this.sockets[type].cb.filter(
-      (c) => c.topic !== topic
+      (c) => c.topic !== topic,
     )
     if (this.sockets[type].ws) {
       this.sockets[type].ws?.send(
@@ -833,7 +833,7 @@ class KucoinApi {
           type: 'unsubscribe',
           topic,
           response: true,
-        })
+        }),
       )
     }
     if (
@@ -848,7 +848,7 @@ class KucoinApi {
   private async handleSubscribe(
     type: RequestType,
     topic: string,
-    cbToSet: (msg: WSMessage) => any
+    cbToSet: (msg: WSMessage) => any,
   ) {
     if (this.sockets[type]) {
       if (this.sockets[type].ws) {
@@ -859,14 +859,14 @@ class KucoinApi {
             topic,
             privateChannel: type === 'private',
             response: true,
-          })
+          }),
         )
         if (!this.sockets[type].cb.find((c) => c.topic === topic)) {
           this.sockets[type].cb.push({ fn: cbToSet, topic })
         }
       } else if (!this.sockets[type].ws && this.sockets[type].pending) {
         this.sockets[type].callOnConnect.push(() =>
-          this.handleSubscribe(type, topic, cbToSet)
+          this.handleSubscribe(type, topic, cbToSet),
         )
       }
     }
@@ -875,7 +875,7 @@ class KucoinApi {
     return {
       ticker: async (
         symbols: string[],
-        callback: (msg: ConvertedWsTicker) => void | Promise<void>
+        callback: (msg: ConvertedWsTicker) => void | Promise<void>,
       ) => {
         if (symbols.length > 0) {
           const thisCb = (msg: WSMessage) => {
@@ -893,7 +893,7 @@ class KucoinApi {
         }
       },
       tickerAll: async (
-        callback: (msg: ConvertedWsTicker) => void | Promise<void>
+        callback: (msg: ConvertedWsTicker) => void | Promise<void>,
       ) => {
         const thisCb = (msg: WSMessage) => {
           if (
