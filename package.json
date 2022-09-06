@@ -1,8 +1,8 @@
 {
   "name": "kucoin-api",
   "version": "1.0.0",
-  "description": "Kucoin api for Gainium",
-  "main": "index.js",
+  "description": "Kucoin API for Gainium",
+  "main": "index.ts",
   "author": "Maksym Shamko <max.shamko25@gmail.com>",
   "license": "MIT",
   "private": true,
@@ -13,5 +13,9 @@
     "query-string": "^7.1.1",
     "reconnecting-websocket": "^4.4.0",
     "uuid": "^9.0.0"
+  },
+  "scripts": {
+    "pull": "git pull origin master",
+    "push": "git push origin master"
   }
 }
