@@ -543,7 +543,7 @@ class KucoinApi {
     GET /api/v1/accounts
     */
   public async getAccounts(params: GetAccountsInput = {}) {
-    return await this.sendRequest<AccountBalance>(
+    return await this.sendRequest<AccountBalance[]>(
       '/api/v1/accounts',
       'GET',
       params,
