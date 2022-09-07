@@ -359,6 +359,26 @@ export type Fee = {
   takerFeeRate: string
 }
 
+export type Symbol = {
+  symbol: string
+  name: string
+  baseCurrency: string
+  quoteCurrency: string
+  feeCurrency: string
+  market: string
+  baseMinSize: string
+  quoteMinSize: string
+  baseMaxSize: string
+  quoteMaxSize: string
+  baseIncrement: string
+  quoteIncrement: string
+  priceIncrement: string
+  priceLimitRate: string
+  minFunds: string
+  isMarginEnabled: boolean
+  enableTrading: boolean
+}
+
 export type ConvertedWsTicker = { symbol: string } & WSTicker
 
 export const OK = 'OK'
@@ -604,7 +624,7 @@ class KucoinApi {
     GET /api/v1/symbols
     */
   public async getSymbols() {
-    return await this.sendRequest<AccountBalance>(
+    return await this.sendRequest<symbol[]>(
       '/api/v1/symbols',
       'GET',
       {},
