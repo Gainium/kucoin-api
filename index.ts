@@ -209,6 +209,30 @@ export type Ticker = {
   time: number
 }
 
+export type AllTicker = {
+  time: number
+  ticker: ExtendedTicker[]
+}
+
+export type ExtendedTicker = {
+  symbol: string // symbol
+  symbolName: string // Name of trading pairs, it would change after renaming
+  buy: string // bestAsk
+  sell: string // bestBid
+  changeRate: string // 24h change rate
+  changePrice: string // 24h change price
+  high: string // 24h highest price
+  low: string // 24h lowest price
+  vol: string // 24h volume，the aggregated trading volume in BTC
+  volValue: string // 24h total, the trading volume in quote currency of last 24 hours
+  last: string // last price
+  averagePrice: string // 24h average transaction price yesterday
+  takerFeeRate: string // Basic Taker Fee
+  makerFeeRate: string // Basic Maker Fee
+  takerCoefficient: string // Taker Fee Coefficient
+  makerCoefficient: string // Maker Fee Coefficient
+}
+
 export type WSTokenResponse = {
   token: string
   instanceServers: {
@@ -659,6 +683,18 @@ class KucoinApi {
       'GET',
       {},
       'private',
+    )
+  }
+  /*  
+    Get All Tickers
+    GET /api/v1/market/allTickers
+    */
+  public async getAllTickers() {
+    return await this.sendRequest<AllTicker>(
+      `/api/v1/market/allTickers`,
+      'GET',
+      {},
+      'public',
     )
   }
   /*  
