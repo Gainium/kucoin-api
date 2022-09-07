@@ -359,7 +359,7 @@ export type Fee = {
   takerFeeRate: string
 }
 
-export type Symbol = {
+export type KucoinSymbol = {
   symbol: string
   name: string
   baseCurrency: string
@@ -624,7 +624,7 @@ class KucoinApi {
     GET /api/v1/symbols
     */
   public async getSymbols() {
-    return await this.sendRequest<symbol[]>(
+    return await this.sendRequest<KucoinSymbol[]>(
       '/api/v1/symbols',
       'GET',
       {},
