@@ -592,10 +592,12 @@ class KucoinApi {
     DELETE /api/v1/orders/<order-id>
     */
   public async cancelOrder(params: { id: string }) {
-    return await this.sendRequest<{
-      cancelledOrderId: string
-      clientOid: string
-    }>(`/api/v1/orders/${params.id}`, 'DELETE', {}, 'private')
+    return await this.sendRequest<CanceledOrderResponse>(
+      `/api/v1/orders/${params.id}`,
+      'DELETE',
+      {},
+      'private',
+    )
   }
   /* 
     Get Symbols List
@@ -655,9 +657,10 @@ class KucoinApi {
     DELETE /api/v1/order/client-order/{clientOid}
     */
   public async cancelOrderByClientId(params: { id: string }) {
-    return await this.sendRequest<
-      CanceledOrderResponse & { clientOid: string }
-    >(`/api/v1/order/client-order/${params.id}`, 'DELETE', {}, 'private')
+    return await this.sendRequest<{
+      cancelledOrderId: string
+      clientOid: string
+    }>(`/api/v1/order/client-order/${params.id}`, 'DELETE', {}, 'private')
   }
   /* 
     List Fills
