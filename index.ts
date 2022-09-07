@@ -359,6 +359,8 @@ export type Fee = {
   takerFeeRate: string
 }
 
+export type BaseFee = Pick<Fee, 'makerFeeRate' | 'takerFeeRate'>
+
 export type KucoinSymbol = {
   symbol: string
   name: string
@@ -725,6 +727,18 @@ class KucoinApi {
   public async getFees(symbols: string[]) {
     return await this.sendRequest<Fee[]>(
       `/api/v1/trade-fees?symbols=${symbols.join(',')}`,
+      'GET',
+      {},
+      'private',
+    )
+  }
+  /*  
+    Get Base Fee
+    GET /api/v1/base-fee
+    */
+  public async getBaseFees() {
+    return await this.sendRequest<BaseFee>(
+      `/api/v1/base-fee`,
       'GET',
       {},
       'private',
