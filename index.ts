@@ -419,7 +419,7 @@ export interface ExecutionReport {
   eventTime: number
   eventType: 'executionReport'
   newClientOrderId: string // Client order ID
-  orderId: number // Order ID
+  orderId: number | string // Order ID
   orderStatus: OrderStatus_LT // Current order status
   orderTime: number // Transaction time
   orderType: FuturesOrderType_LT // Order type
@@ -460,6 +460,10 @@ class KucoinApi {
       checkPong: NodeJS.Timer | null
     }
   }
+  private orderFills: {
+    orderId: string
+    fills: { price: string; qty: string }[]
+  }[]
   constructor(params?: {
     key?: string
     secret?: string
@@ -476,6 +480,7 @@ class KucoinApi {
     }
     this.sockets = this.defaultWs()
     this.handleWsMessage = this.handleWsMessage.bind(this)
+    this.orderFills = []
   }
   private handleLog(...args: any[]) {
     console.log(new Date(), ` | ${args}`)
@@ -993,32 +998,59 @@ class KucoinApi {
     }
   }
   private convertOrderUpdate(msg: WSUpdateOrder): ExecutionReport {
+    let find = this.orderFills.find((o) => o.orderId === msg.orderId)
+    if (!find) {
+      find = { orderId: msg.orderId, fills: [] }
+    }
+    if (find) {
+      find.fills.push({
+        price: msg.matchPrice || '0',
+        qty: msg.matchSize || '0',
+      })
+    }
+    const totalTradeQuantity = `${find.fills.reduce(
+      (acc, v) => acc + parseFloat(v.qty),
+      0,
+    )}`
+    const totalQuoteTradeQuantity = `${find.fills.reduce(
+      (acc, v) => acc + parseFloat(v.price) * parseFloat(v.qty),
+      0,
+    )}`
     const convertTime = (ts: number) => Math.round(ts / 1000000)
+    if (msg.status === 'done') {
+      this.orderFills = this.orderFills.filter((f) => f.orderId !== msg.orderId)
+    } else {
+      this.orderFills = [
+        ...this.orderFills.filter((f) => f.orderId !== msg.orderId),
+        find,
+      ]
+    }
     return {
       creationTime: convertTime(msg.orderTime),
       eventTime: convertTime(msg.ts),
       eventType: 'executionReport',
       newClientOrderId: msg.clientOid,
-      orderId: parseFloat(msg.orderId),
+      orderId: msg.orderId,
       orderTime: convertTime(msg.ts),
       orderStatus:
-        msg.type === 'filled'
+        msg.type === 'match' && msg.status === 'match'
+          ? 'PARTIALLY_FILLED'
+          : (msg.type === 'canceled' &&
+              msg.status === 'done' &&
+              msg.filledSize !== '0') ||
+            (msg.type === 'filled' && msg.status === 'done')
           ? 'FILLED'
-          : msg.type === 'canceled'
-          ? 'CANCELED'
-          : msg.type === 'open' && msg.remainSize === msg.size
+          : msg.type === 'open' && msg.status === 'open'
           ? 'NEW'
-          : 'PARTIALLY_FILLED',
+          : 'CANCELED',
       orderType: msg.orderType === 'limit' ? 'LIMIT' : 'MARKET',
       originalClientOrderId: msg.clientOid,
-      price: msg.price,
-      quantity: msg.size,
+      price: msg.price || msg.matchPrice || '0',
+      quantity: msg.size || msg.filledSize || '0',
       side: msg.side === 'buy' ? 'BUY' : 'SELL',
       symbol: msg.symbol,
-      totalQuoteTradeQuantity: `${
-        parseFloat(msg.price) * parseFloat(msg.filledSize || '0')
-      }`,
-      totalTradeQuantity: msg.filledSize,
+      totalQuoteTradeQuantity,
+      totalTradeQuantity,
     }
   }
   private convertBalanceUpdate(msg: WSBalance): OutboundAccountPosition {
