@@ -314,7 +314,7 @@ export type WSUpdateOrder = {
   /** time in nanoseconds */
   orderTime: number
   size: string
-  olcSize?: string
+  oldSize?: string
   filledSize: string
   price: string
   clientOid: string
@@ -386,6 +386,56 @@ export type ConvertedWsTicker = { symbol: string } & WSTicker
 export const OK = 'OK'
 
 export const NOTOK = 'NOTOK'
+
+export interface AssetBalance {
+  asset: string
+  free: string
+  locked: string
+}
+
+export interface OutboundAccountPosition {
+  balances: AssetBalance[]
+  eventTime: number
+  eventType: 'outboundAccountPosition'
+  lastAccountUpdate: number
+}
+
+export interface BalanceUpdate {
+  asset: string
+  balanceDelta: string
+  clearTime: number
+  eventTime: number
+  eventType: 'balanceUpdate'
+}
+
+export type OrderStatus_LT = 'CANCELED' | 'FILLED' | 'NEW' | 'PARTIALLY_FILLED'
+
+export type FuturesOrderType_LT = 'LIMIT' | 'MARKET'
+
+export type OrderSide_LT = 'BUY' | 'SELL'
+
+export interface ExecutionReport {
+  creationTime: number // Order creation time
+  eventTime: number
+  eventType: 'executionReport'
+  newClientOrderId: string // Client order ID
+  orderId: number // Order ID
+  orderStatus: OrderStatus_LT // Current order status
+  orderTime: number // Transaction time
+  orderType: FuturesOrderType_LT // Order type
+  originalClientOrderId: string | null // Original client order ID; This is the ID of the order being canceled
+  price: string // Order price
+  quantity: string // Order quantity
+  side: OrderSide_LT // Side
+  symbol: string // Symbol
+  totalQuoteTradeQuantity: string // Cumulative quote asset transacted quantity
+  totalTradeQuantity: string // Cumulative filled quantity
+}
+
+export type UserDataStreamEvent =
+  | OutboundAccountPosition
+  | ExecutionReport
+  | BalanceUpdate
 
 const SUCCESS_CODE = '200000'
 
@@ -942,6 +992,45 @@ class KucoinApi {
       }
     }
   }
+  private convertOrderUpdate(msg: WSUpdateOrder): ExecutionReport {
+    const convertTime = (ts: number) => Math.round(ts / 1000000)
+    return {
+      creationTime: convertTime(msg.orderTime),
+      eventTime: convertTime(msg.ts),
+      eventType: 'executionReport',
+      newClientOrderId: msg.clientOid,
+      orderId: parseFloat(msg.orderId),
+      orderTime: convertTime(msg.ts),
+      orderStatus:
+        msg.type === 'filled'
+          ? 'FILLED'
+          : msg.type === 'canceled'
+          ? 'CANCELED'
+          : msg.type === 'open' && msg.remainSize === msg.size
+          ? 'NEW'
+          : 'PARTIALLY_FILLED',
+      orderType: msg.orderType === 'limit' ? 'LIMIT' : 'MARKET',
+      originalClientOrderId: msg.clientOid,
+      price: msg.price,
+      quantity: msg.size,
+      side: msg.side === 'buy' ? 'BUY' : 'SELL',
+      symbol: msg.symbol,
+      totalQuoteTradeQuantity: `${
+        parseFloat(msg.price) * parseFloat(msg.filledSize || '0')
+      }`,
+      totalTradeQuantity: msg.filledSize,
+    }
+  }
+  private convertBalanceUpdate(msg: WSBalance): OutboundAccountPosition {
+    return {
+      eventTime: parseFloat(msg.time),
+      eventType: 'outboundAccountPosition',
+      lastAccountUpdate: 0,
+      balances: [
+        { asset: msg.currency, free: msg.available, locked: msg.hold },
+      ],
+    }
+  }
   public ws() {
     return {
       ticker: async (
@@ -979,14 +1068,16 @@ class KucoinApi {
         this.handleSubscribe('public', topic, thisCb)
         return () => this.handleUnsubscribe('public', topic)
       },
-      order: async (callback: (msg: WSUpdateOrder) => void | Promise<void>) => {
+      order: async (
+        callback: (msg: ExecutionReport) => void | Promise<void>,
+      ) => {
         const thisCb = (msg: WSMessage) => {
           if (
             msg.type === WSTypesEnum.message &&
             msg.topic === WSMessageTopicEnum.orderChange &&
             msg.subject === WSSubjectEnum.orderChange
           ) {
-            callback(msg.data)
+            callback(this.convertOrderUpdate(msg.data))
           }
         }
         const topic = `/spotMarket/tradeOrders`
@@ -994,14 +1085,16 @@ class KucoinApi {
         this.handleSubscribe('private', topic, thisCb)
         return () => this.handleUnsubscribe('private', topic)
       },
-      balance: async (callback: (msg: WSBalance) => void | Promise<void>) => {
+      balance: async (
+        callback: (msg: OutboundAccountPosition) => void | Promise<void>,
+      ) => {
         const thisCb = (msg: WSMessage) => {
           if (
             msg.type === WSTypesEnum.message &&
             msg.topic === WSMessageTopicEnum.balance &&
             msg.subject === WSSubjectEnum.balance
           ) {
-            callback(msg.data)
+            callback(this.convertBalanceUpdate(msg.data))
           }
         }
         const topic = `/account/balance`
