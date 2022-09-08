@@ -1008,14 +1008,14 @@ class KucoinApi {
         qty: msg.matchSize || '0',
       })
     }
-    const totalTradeQuantity = `${find.fills.reduce(
+    const totalTradeQuantity = find.fills.reduce(
       (acc, v) => acc + parseFloat(v.qty),
       0,
-    )}`
-    const totalQuoteTradeQuantity = `${find.fills.reduce(
+    )
+    const totalQuoteTradeQuantity = find.fills.reduce(
       (acc, v) => acc + parseFloat(v.price) * parseFloat(v.qty),
       0,
-    )}`
+    )
     const convertTime = (ts: number) => Math.round(ts / 1000000)
     if (msg.status === 'done') {
       this.orderFills = this.orderFills.filter((f) => f.orderId !== msg.orderId)
@@ -1045,12 +1045,12 @@ class KucoinApi {
           : 'CANCELED',
       orderType: msg.orderType === 'limit' ? 'LIMIT' : 'MARKET',
       originalClientOrderId: msg.clientOid,
-      price: msg.price || msg.matchPrice || '0',
+      price: `${totalQuoteTradeQuantity / totalTradeQuantity}`,
       quantity: msg.size || msg.filledSize || '0',
       side: msg.side === 'buy' ? 'BUY' : 'SELL',
       symbol: msg.symbol,
-      totalQuoteTradeQuantity,
-      totalTradeQuantity,
+      totalQuoteTradeQuantity: `${totalQuoteTradeQuantity}`,
+      totalTradeQuantity: `${totalTradeQuantity}`,
     }
   }
   private convertBalanceUpdate(msg: WSBalance): OutboundAccountPosition {
