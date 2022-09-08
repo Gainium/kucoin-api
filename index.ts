@@ -1150,7 +1150,8 @@ class KucoinApi {
           if (
             msg.type === WSTypesEnum.message &&
             msg.topic === WSMessageTopicEnum.balance &&
-            msg.subject === WSSubjectEnum.balance
+            msg.subject === WSSubjectEnum.balance &&
+            msg.data.relationEvent.indexOf('trade') !== -1
           ) {
             callback(this.convertBalanceUpdate(msg.data))
           }
