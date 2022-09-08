@@ -473,9 +473,8 @@ class KucoinApi {
     this.key = params?.key || ''
     this.secret = params?.secret || ''
     this.passphrase = params?.passphrase || ''
-    if (params?.environment === 'live') {
-      this.url = 'https://api.kucoin.com'
-    } else {
+    this.url = 'https://api.kucoin.com'
+    if (params?.environment === 'sandbox') {
       this.url = 'https://openapi-sandbox.kucoin.com'
     }
     this.sockets = this.defaultWs()
