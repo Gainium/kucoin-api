@@ -1045,7 +1045,13 @@ class KucoinApi {
           : 'CANCELED',
       orderType: msg.orderType === 'limit' ? 'LIMIT' : 'MARKET',
       originalClientOrderId: msg.clientOid,
-      price: `${totalQuoteTradeQuantity / totalTradeQuantity}`,
+      price:
+        msg.price ||
+        `${
+          totalTradeQuantity !== 0
+            ? totalQuoteTradeQuantity / totalTradeQuantity
+            : 0
+        }`,
       quantity: msg.size || msg.filledSize || '0',
       side: msg.side === 'buy' ? 'BUY' : 'SELL',
       symbol: msg.symbol,
