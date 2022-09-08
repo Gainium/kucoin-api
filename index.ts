@@ -26,7 +26,7 @@ export type AccountBalance = {
   type: AccountType
   balance: string
   available: string
-  hold: string
+  holds: string
 }
 export type Response<T> = {
   code: string
