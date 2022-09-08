@@ -818,6 +818,8 @@ class KucoinApi {
           server,
         }
       }
+    } else {
+      throw new Error(`${result.reason} | ${result.reasonCode}`)
     }
   }
   private openSocket(url: string, type: RequestType) {
