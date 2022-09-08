@@ -437,6 +437,18 @@ export type UserDataStreamEvent =
   | ExecutionReport
   | BalanceUpdate
 
+export interface MiniTicker {
+  eventType: string
+  eventTime: number
+  symbol: string
+  curDayClose: string
+  open: string
+  high: string
+  low: string
+  volume: string
+  volumeQuote: string
+}
+
 const SUCCESS_CODE = '200000'
 
 const HANDLE_MESSAGE = 'handleMessage'
@@ -883,9 +895,16 @@ class KucoinApi {
       return w
     }
   }
-  private convertWsTicker(msg: WSTickerMessage) {
+  private convertWsTicker(msg: WSTickerMessage): MiniTicker {
     return {
-      ...msg.data,
+      eventType: '24hrMiniTicker',
+      eventTime: msg.data.time,
+      curDayClose: msg.data.price,
+      open: msg.data.price,
+      high: msg.data.price,
+      low: msg.data.price,
+      volume: msg.data.size,
+      volumeQuote: msg.data.size,
       symbol:
         msg.subject === WSSubjectEnum.trade
           ? msg.topic.split(':')[1]
@@ -1074,7 +1093,7 @@ class KucoinApi {
     return {
       ticker: async (
         symbols: string[],
-        callback: (msg: ConvertedWsTicker) => void | Promise<void>,
+        callback: (msg: MiniTicker) => void | Promise<void>,
       ) => {
         if (symbols.length > 0) {
           const thisCb = (msg: WSMessage) => {
@@ -1092,7 +1111,7 @@ class KucoinApi {
         }
       },
       tickerAll: async (
-        callback: (msg: ConvertedWsTicker) => void | Promise<void>,
+        callback: (msg: MiniTicker) => void | Promise<void>,
       ) => {
         const thisCb = (msg: WSMessage) => {
           if (
