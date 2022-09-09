@@ -250,6 +250,7 @@ export enum WSSubjectEnum {
   trade = 'trade.ticker',
   orderChange = 'orderChange',
   balance = 'account.balance',
+  klines = 'trade.candles.update',
 }
 
 export enum WSTypesEnum {
@@ -262,6 +263,7 @@ export enum WSMessageTopicEnum {
   tickerAll = '/market/ticker:all',
   orderChange = '/spotMarket/tradeOrders',
   balance = '/account/balance',
+  klines = '/market/candles:',
 }
 
 export type WSTickerMessage = {
@@ -335,12 +337,27 @@ export type WSOrderChangeMessage = {
   data: WSUpdateOrder
 }
 
+export type WSKlinesUpdate = {
+  symbol: string
+  candles: string
+  /** time in ns */
+  time: number
+}
+
+export type WSKlines = {
+  type: WSTypesEnum.message
+  topic: WSMessageTopicEnum.klines
+  subject: WSSubjectEnum.klines
+  data: WSKlinesUpdate
+}
+
 export type WSMessage =
   | WSAckMessage
   | WSTickerMessage
   | WSWelcomeMessage
   | WSOrderChangeMessage
   | WSBalanceMessage
+  | WSKlines
 
 export type WSTicker = {
   bestAsk: string
@@ -448,6 +465,8 @@ export interface MiniTicker {
   volume: string
   volumeQuote: string
 }
+
+export type Kline = string[][]
 
 const SUCCESS_CODE = '200000'
 
@@ -808,6 +827,23 @@ class KucoinApi {
       'GET',
       {},
       'private',
+    )
+  }
+  /*  
+    Get Klines
+    GET /api/v1/market/candles
+    */
+  public async getKlines(params: {
+    symbol: string
+    startAt: number
+    endAt: number
+    type: string
+  }) {
+    return await this.sendRequest<Kline>(
+      `/api/v1/market/candles`,
+      'GET',
+      params,
+      'public',
     )
   }
   private async getWsUrl(type: RequestType) {
@@ -1180,6 +1216,23 @@ class KucoinApi {
         await this.getWs('private')
         this.handleSubscribe('private', topic, thisCb)
         return () => this.handleUnsubscribe('private', topic)
+      },
+      klines: async (
+        params: { symbol: string; type: string },
+        callback: (msg: WSKlinesUpdate) => void | Promise<void>,
+      ) => {
+        const thisCb = (msg: WSMessage) => {
+          if (
+            msg.type === WSTypesEnum.message &&
+            msg.subject === WSSubjectEnum.klines
+          ) {
+            callback(msg.data)
+          }
+        }
+        const topic = `/market/candles:${params.symbol}_${params.type}`
+        await this.getWs('public')
+        this.handleSubscribe('public', topic, thisCb)
+        return () => this.handleUnsubscribe('public', topic)
       },
     }
   }
