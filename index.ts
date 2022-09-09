@@ -244,6 +244,17 @@ export type WSTokenResponse = {
   }[]
 }
 
+export type WSTokenResponseToUse = {
+  url: string
+  server: {
+    endpoint: string
+    exncrypt: boolean
+    protocol: string
+    pingInterval: number
+    pingTimeout: number
+  }
+}
+
 export type WSTypes = 'message' | 'ack' | 'welcome'
 
 export enum WSSubjectEnum {
@@ -846,17 +857,7 @@ class KucoinApi {
       'public',
     )
   }
-  public async getWsUrl(type: RequestType, tokenToUse?: WSTokenResponse) {
-    if (tokenToUse) {
-      const { token, instanceServers } = tokenToUse
-      const [server] = instanceServers
-      if (server) {
-        return {
-          url: `${server.endpoint}?token=${token}&[connectId=${v4()}]`,
-          server,
-        }
-      }
-    }
+  public async getWsUrl(type: RequestType) {
     let url = '/api/v1/bullet-public'
     if (type === 'private') {
       url = '/api/v1/bullet-private'
@@ -903,8 +904,11 @@ class KucoinApi {
     })
     return rws
   }
-  private async connectWS(type: RequestType, tokenToUse?: WSTokenResponse) {
-    const token = await this.getWsUrl(type, tokenToUse)
+  private async connectWS(
+    type: RequestType,
+    tokenToUse?: WSTokenResponseToUse,
+  ) {
+    const token = tokenToUse || (await this.getWsUrl(type))
     if (token) {
       const w = this.openSocket(token.url, type)
       w.onerror = (msg) => {
@@ -988,7 +992,7 @@ class KucoinApi {
   private async getWs(
     type: RequestType,
     retry?: (...args: any[]) => any,
-    token?: WSTokenResponse,
+    token?: WSTokenResponseToUse,
   ) {
     if (this.sockets[type].ws) {
       return this.sockets[type].ws
@@ -1159,7 +1163,7 @@ class KucoinApi {
       ],
     }
   }
-  public ws(token?: WSTokenResponse) {
+  public ws(token?: WSTokenResponseToUse) {
     return {
       ticker: async (
         symbols: string[],
