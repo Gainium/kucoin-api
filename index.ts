@@ -938,28 +938,29 @@ class KucoinApi {
             this.handleSubscribe(type, s.topic, s.fn)
           }
         }
-
-        this.sockets[type].timer = setInterval(() => {
-          //@ts-ignore
-          w._ws.ping()
-          this.sockets[type].lastPing = Date.now()
-          this.sockets[type].checkPong = setTimeout(async () => {
-            const diff =
-              this.sockets[type].lastPong && this.sockets[type].lastPing
-                ? (this.sockets[type].lastPong || 0) -
-                  (this.sockets[type].lastPing || 0)
-                : token.server.pingTimeout * 1000
-            if (diff > token.server.pingTimeout || diff < 0) {
-              this.handleLog(`Ping-pong timeout exceeded ${diff}ms`)
-              const subscribers = this.sockets[type].cb
-              this.closeWs(type)
-              await this.getWs(type)
-              for (const s of subscribers) {
-                this.handleSubscribe(type, s.topic, s.fn)
+        if (typeof window === 'undefined') {
+          this.sockets[type].timer = setInterval(() => {
+            //@ts-ignore
+            w._ws.ping()
+            this.sockets[type].lastPing = Date.now()
+            this.sockets[type].checkPong = setTimeout(async () => {
+              const diff =
+                this.sockets[type].lastPong && this.sockets[type].lastPing
+                  ? (this.sockets[type].lastPong || 0) -
+                    (this.sockets[type].lastPing || 0)
+                  : token.server.pingTimeout * 1000
+              if (diff > token.server.pingTimeout || diff < 0) {
+                this.handleLog(`Ping-pong timeout exceeded ${diff}ms`)
+                const subscribers = this.sockets[type].cb
+                this.closeWs(type)
+                await this.getWs(type)
+                for (const s of subscribers) {
+                  this.handleSubscribe(type, s.topic, s.fn)
+                }
               }
-            }
-          }, token.server.pingTimeout)
-        }, token.server.pingInterval)
+            }, token.server.pingTimeout)
+          }, token.server.pingInterval)
+        }
       }
       w.onclose = () => {
         this.handleLog('Kucoin WS closed')
