@@ -892,14 +892,16 @@ class KucoinApi {
     })
 
     rws.addEventListener('open', () => {
-      //@ts-ignore
-      if (rws._ws.on) {
+      if (typeof window === 'undefined') {
         //@ts-ignore
-        rws._ws.on('ping', () => rws._ws.pong(() => null))
-        //@ts-ignore
-        rws._ws.on('pong', () => {
-          this.sockets[type].lastPong = Date.now()
-        })
+        if (rws._ws.on) {
+          //@ts-ignore
+          rws._ws.on('ping', () => rws._ws.pong(() => null))
+          //@ts-ignore
+          rws._ws.on('pong', () => {
+            this.sockets[type].lastPong = Date.now()
+          })
+        }
       }
     })
     return rws
