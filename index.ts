@@ -339,7 +339,7 @@ export type WSOrderChangeMessage = {
 
 export type WSKlinesUpdate = {
   symbol: string
-  candles: string
+  candles: string[]
   /** time in ns */
   time: number
 }
