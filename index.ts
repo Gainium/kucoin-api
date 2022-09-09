@@ -866,6 +866,26 @@ class KucoinApi {
       }
       w.onopen = () => {
         this.handleLog('Kucoin WS started')
+        this.sockets[type].lastPing = 0
+        this.sockets[type].lastPong = 0
+        if (this.sockets[type].timer) {
+          //@ts-ignore
+          clearInterval(this.sockets[type].timer)
+        }
+        if (this.sockets[type].checkPong) {
+          //@ts-ignore
+          clearInterval(this.sockets[type].checkPong)
+        }
+        if (this.sockets[type].cb.length > 0) {
+          console.log(
+            this.sockets[type].cb.length,
+            ' subscribers exist',
+            this.sockets[type].cb,
+          )
+          for (const s of this.sockets[type].cb) {
+            this.handleSubscribe(type, s.topic, s.fn)
+          }
+        }
 
         this.sockets[type].timer = setInterval(() => {
           //@ts-ignore
