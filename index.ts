@@ -338,6 +338,7 @@ export type WSUpdateOrder = {
   liquidity: Liquidity
   matchPrice?: string
   matchSize?: string
+  tradeId?: string
 }
 
 export type WSOrderChangeMessage = {
@@ -504,7 +505,7 @@ class KucoinApi {
   }
   private orderFills: {
     orderId: string
-    fills: { price: string; qty: string }[]
+    fills: { price: string; qty: string; tradeId: string }[]
   }[]
   constructor(params?: {
     key?: string
@@ -1099,11 +1100,14 @@ class KucoinApi {
     if (!find) {
       find = { orderId: msg.orderId, fills: [] }
     }
-    if (find) {
-      find.fills.push({
-        price: msg.matchPrice || '0',
-        qty: msg.matchSize || '0',
-      })
+    if (find && msg.tradeId) {
+      if (!find.fills.find((t) => t.tradeId === msg.tradeId)) {
+        find.fills.push({
+          price: msg.matchPrice || '0',
+          qty: msg.matchSize || '0',
+          tradeId: msg.tradeId,
+        })
+      }
     }
     const totalTradeQuantity = find.fills.reduce(
       (acc, v) => acc + parseFloat(v.qty),
@@ -1130,7 +1134,9 @@ class KucoinApi {
       orderId: msg.orderId,
       orderTime: convertTime(msg.ts),
       orderStatus:
-        msg.type === 'match' && msg.status === 'match'
+        (msg.type === 'match' && msg.status === 'match') ||
+        (msg.type === 'match' && msg.status === 'open') ||
+        (msg.type === 'open' && msg.status === 'open' && msg.filledSize !== '0')
           ? 'PARTIALLY_FILLED'
           : (msg.type === 'canceled' &&
               msg.status === 'done' &&
