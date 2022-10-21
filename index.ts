@@ -1096,6 +1096,9 @@ class KucoinApi {
     }
   }
   private convertOrderUpdate(msg: WSUpdateOrder): ExecutionReport {
+    if (msg.symbol.indexOf('3S') !== -1 && msg.symbol.indexOf('3L') !== -1) {
+      console.log(msg)
+    }
     let find = this.orderFills.find((o) => o.orderId === msg.orderId)
     if (!find) {
       find = { orderId: msg.orderId, fills: [] }
