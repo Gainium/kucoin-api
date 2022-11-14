@@ -930,11 +930,11 @@ class KucoinApi {
           clearInterval(this.sockets[type].checkPong)
         }
         if (this.sockets[type].cb.length > 0) {
-          console.log(
+          /*console.log(
             this.sockets[type].cb.length,
             ' subscribers exist',
             this.sockets[type].cb,
-          )
+          )*/
           for (const s of this.sockets[type].cb) {
             this.handleSubscribe(type, s.topic, s.fn)
           }
@@ -1096,9 +1096,6 @@ class KucoinApi {
     }
   }
   private convertOrderUpdate(msg: WSUpdateOrder): ExecutionReport {
-    if (msg.symbol.indexOf('3S') !== -1 || msg.symbol.indexOf('3L') !== -1) {
-      console.log(msg)
-    }
     let find = this.orderFills.find((o) => o.orderId === msg.orderId)
     if (!find) {
       find = { orderId: msg.orderId, fills: [] }
