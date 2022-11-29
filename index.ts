@@ -478,6 +478,32 @@ export interface MiniTicker {
   volumeQuote: string
 }
 
+export interface FullTicker {
+  eventType: string
+  eventTime: number
+  symbol: string
+  priceChange: string
+  priceChangePercent: string
+  weightedAvg: string
+  prevDayClose: string
+  curDayClose: string
+  closeTradeQuantity: string
+  bestBid: string
+  bestBidQnt: string
+  bestAsk: string
+  bestAskQnt: string
+  open: string
+  high: string
+  low: string
+  volume: string
+  volumeQuote: string
+  openTime: number
+  closeTime: number
+  firstTradeId: number
+  lastTradeId: number
+  totalTrades: number
+}
+
 export type Kline = string[][]
 
 const SUCCESS_CODE = '200000'
@@ -969,7 +995,7 @@ class KucoinApi {
       return w
     }
   }
-  private convertWsTicker(msg: WSTickerMessage): MiniTicker {
+  private convertWsTicker(msg: WSTickerMessage): FullTicker {
     return {
       eventType: '24hrMiniTicker',
       eventTime: msg.data.time,
@@ -983,6 +1009,20 @@ class KucoinApi {
         msg.subject === WSSubjectEnum.trade
           ? msg.topic.split(':')[1]
           : msg.subject,
+      priceChange: '',
+      priceChangePercent: '',
+      weightedAvg: '',
+      prevDayClose: '',
+      closeTradeQuantity: '',
+      bestBid: msg.data.bestBid,
+      bestAsk: msg.data.bestAsk,
+      bestAskQnt: msg.data.bestAskSize,
+      bestBidQnt: msg.data.bestBidSize,
+      openTime: msg.data.time,
+      closeTime: msg.data.time,
+      firstTradeId: 0,
+      lastTradeId: 0,
+      totalTrades: 0,
     }
   }
   private handleWsMessage(msg: WSMessage) {
@@ -1176,7 +1216,7 @@ class KucoinApi {
     return {
       ticker: async (
         symbols: string[],
-        callback: (msg: MiniTicker) => void | Promise<void>,
+        callback: (msg: FullTicker) => void | Promise<void>,
       ) => {
         if (symbols.length > 0) {
           const thisCb = (msg: WSMessage) => {
@@ -1194,7 +1234,7 @@ class KucoinApi {
         }
       },
       tickerAll: async (
-        callback: (msg: MiniTicker) => void | Promise<void>,
+        callback: (msg: FullTicker) => void | Promise<void>,
       ) => {
         const thisCb = (msg: WSMessage) => {
           if (
