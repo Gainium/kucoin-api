@@ -1040,9 +1040,10 @@ class KucoinApi {
   ) {
     if (this.sockets[type].ws) {
       return this.sockets[type].ws
-    } else {
-      if (!this.sockets[type].pending) {
-        this.sockets[type].pending = true
+    }
+    if (!this.sockets[type].pending) {
+      this.sockets[type].pending = true
+      try {
         const ws = await this.connectWS(type, token)
         if (ws) {
           ws.onmessage = (msg) => {
@@ -1069,10 +1070,12 @@ class KucoinApi {
           return ws
         }
         this.sockets[type].pending = false
-      } else {
-        if (retry) {
-          this.sockets[type].callOnConnect.push(retry)
-        }
+      } catch {
+        this.sockets[type].pending = false
+      }
+    } else {
+      if (retry) {
+        this.sockets[type].callOnConnect.push(retry)
       }
     }
   }
