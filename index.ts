@@ -1177,15 +1177,20 @@ class KucoinApi {
       orderId: msg.orderId,
       orderTime: convertTime(msg.ts),
       orderStatus:
-        (msg.type === 'match' && msg.status === 'match') ||
-        (msg.type === 'match' && msg.status === 'open') ||
-        (msg.type === 'open' && msg.status === 'open' && msg.filledSize !== '0')
-          ? 'PARTIALLY_FILLED'
-          : (msg.type === 'canceled' &&
-              msg.status === 'done' &&
-              msg.filledSize !== '0') ||
-            (msg.type === 'filled' && msg.status === 'done')
+        (msg.type === 'canceled' &&
+          msg.status === 'done' &&
+          msg.filledSize !== '0') ||
+        (msg.type === 'filled' && msg.status === 'done') ||
+        (msg.type === 'match' &&
+          msg.status === 'match' &&
+          msg.remainSize === '0')
           ? 'FILLED'
+          : (msg.type === 'match' && msg.status === 'match') ||
+            (msg.type === 'match' && msg.status === 'open') ||
+            (msg.type === 'open' &&
+              msg.status === 'open' &&
+              msg.filledSize !== '0')
+          ? 'PARTIALLY_FILLED'
           : msg.type === 'open' && msg.status === 'open'
           ? 'NEW'
           : 'CANCELED',
