@@ -4,6 +4,9 @@ import fetch from 'isomorphic-unfetch'
 import ws from 'isomorphic-ws'
 import ReconnectingWebSocket from 'reconnecting-websocket'
 import { v4 } from 'uuid'
+import { IdMute, IdMutex } from './mutex'
+
+const mutex = new IdMutex()
 
 export type UnPromise<T> = T extends Promise<infer U> ? U : T
 
@@ -510,6 +513,10 @@ const SUCCESS_CODE = '200000'
 
 const HANDLE_MESSAGE = 'handleMessage'
 
+const sleep = (milliseconds: number): Promise<void> => {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds))
+}
+
 class KucoinApi {
   private key: string
   private secret: string
@@ -527,12 +534,14 @@ class KucoinApi {
       lastPing: number | null
       lastPong: number | null
       checkPong: NodeJS.Timer | null
+      topics: Set<string>
     }
   }
   private orderFills: {
     orderId: string
     fills: { price: string; qty: string; tradeId: string }[]
   }[]
+  private lastData: Map<string, number> = new Map()
   constructor(params?: {
     key?: string
     secret?: string
@@ -566,6 +575,7 @@ class KucoinApi {
         lastPing: null,
         lastPong: null,
         checkPong: null,
+        topics: new Set<string>(),
       },
       private: {
         ws: null,
@@ -578,6 +588,7 @@ class KucoinApi {
         lastPing: null,
         checkPong: null,
         lastPong: null,
+        topics: new Set<string>(),
       },
     }
   }
@@ -941,7 +952,7 @@ class KucoinApi {
     if (token) {
       const w = this.openSocket(token.url, type)
       w.onerror = (msg) => {
-        this.handleLog('Kucoin WS Error', msg)
+        this.handleLog('Kucoin WS Error', msg.message)
       }
       w.onopen = () => {
         this.handleLog('Kucoin WS started')
@@ -978,19 +989,20 @@ class KucoinApi {
                   : token.server.pingTimeout * 1000
               if (diff > token.server.pingTimeout || diff < 0) {
                 this.handleLog(`Ping-pong timeout exceeded ${diff}ms`)
-                const subscribers = this.sockets[type].cb
+                this.sockets[type].ws?.reconnect()
+                /*const subscribers = this.sockets[type].cb
                 this.closeWs(type)
                 await this.getWs(type)
                 for (const s of subscribers) {
                   this.handleSubscribe(type, s.topic, s.fn)
-                }
+                }*/
               }
             }, token.server.pingTimeout)
           }, token.server.pingInterval)
         }
       }
-      w.onclose = () => {
-        this.handleLog('Kucoin WS closed')
+      w.onclose = (e) => {
+        this.handleLog('Kucoin WS closed', e.code)
       }
       return w
     }
@@ -1089,19 +1101,22 @@ class KucoinApi {
     }
     this.sockets[type] = this.defaultWs()[type]
   }
+  @IdMute(mutex, () => 'unsubscribe')
   private async handleUnsubscribe(type: RequestType, topic: string) {
     this.sockets[type].cb = this.sockets[type].cb.filter(
       (c) => c.topic !== topic,
     )
     if (this.sockets[type].ws) {
+      const id = +new Date() * Math.random()
       this.sockets[type].ws?.send(
         JSON.stringify({
-          id: Date.now(),
+          id: `${type}@${topic}@${id}`,
           type: 'unsubscribe',
           topic,
           response: true,
         }),
       )
+      this.sockets[type].topics.delete(topic)
     }
     if (
       ((this.sockets[type].cb.length === 1 &&
@@ -1111,7 +1126,9 @@ class KucoinApi {
     ) {
       this.closeWs(type)
     }
+    await sleep(200)
   }
+  @IdMute(mutex, () => 'subscribe')
   private async handleSubscribe(
     type: RequestType,
     topic: string,
@@ -1119,15 +1136,25 @@ class KucoinApi {
   ) {
     if (this.sockets[type]) {
       if (this.sockets[type].ws) {
+        if (this.sockets[type].topics.size === 300) {
+          this.handleLog('Cannot connect more than 300')
+          return
+        }
+        if (this.sockets[type].topics.has(topic)) {
+          this.handleLog(`Connection already exist ${topic}`)
+          return
+        }
+        const id = +new Date() * Math.random()
         this.sockets[type].ws?.send(
           JSON.stringify({
-            id: Date.now(),
+            id: `${type}@${topic}@${id}`,
             type: 'subscribe',
             topic,
             privateChannel: type === 'private',
             response: true,
           }),
         )
+        this.sockets[type].topics.add(topic)
         if (!this.sockets[type].cb.find((c) => c.topic === topic)) {
           this.sockets[type].cb.push({ fn: cbToSet, topic })
         }
@@ -1137,6 +1164,7 @@ class KucoinApi {
         )
       }
     }
+    await sleep(200)
   }
   private convertOrderUpdate(msg: WSUpdateOrder): ExecutionReport {
     let find = this.orderFills.find((o) => o.orderId === msg.orderId)
@@ -1301,6 +1329,10 @@ class KucoinApi {
             msg.type === WSTypesEnum.message &&
             msg.subject === WSSubjectEnum.klines
           ) {
+            if (this.lastData.get(msg.topic) === msg.data.time) {
+              return
+            }
+            this.lastData.set(msg.topic, msg.data.time)
             callback(msg.data)
           }
         }

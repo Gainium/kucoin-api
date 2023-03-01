@@ -19,7 +19,8 @@
     "strict": true,
     "target": "esnext",
     "isolatedModules": false,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "experimentalDecorators": true
   },
   "exclude": ["node_modules"],
   "include": ["**/*.ts", "**/*.tsx"]
