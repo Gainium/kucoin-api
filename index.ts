@@ -535,6 +535,7 @@ class KucoinApi {
       lastPong: number | null
       checkPong: NodeJS.Timer | null
       topics: Set<string>
+      onError?: (msg: string) => void
     }
   }
   private orderFills: {
@@ -576,6 +577,7 @@ class KucoinApi {
         lastPong: null,
         checkPong: null,
         topics: new Set<string>(),
+        onError: () => null,
       },
       private: {
         ws: null,
@@ -589,6 +591,7 @@ class KucoinApi {
         checkPong: null,
         lastPong: null,
         topics: new Set<string>(),
+        onError: () => null,
       },
     }
   }
@@ -925,7 +928,7 @@ class KucoinApi {
       connectionTimeout: 4e3,
       debug: false,
       maxReconnectionDelay: 10e3,
-      maxRetries: Infinity,
+      maxRetries: 3,
       minReconnectionDelay: 4e3,
     })
 
@@ -951,11 +954,13 @@ class KucoinApi {
     const token = tokenToUse || (await this.getWsUrl(type))
     if (token) {
       const w = this.openSocket(token.url, type)
-      w.onerror = (msg) => {
-        this.handleLog('Kucoin WS Error', msg.message)
+      w.onerror = (e) => {
+        const msg = `Kucoin WS Error, reason: ${e.message}`
+        this.handleLog(msg)
+        throw new Error(msg)
       }
       w.onopen = () => {
-        this.handleLog('Kucoin WS started')
+        this.handleLog(`Kucoin WS started, retry ${w.retryCount}`)
         this.sockets[type].lastPing = 0
         this.sockets[type].lastPong = 0
         if (this.sockets[type].timer) {
@@ -1002,8 +1007,14 @@ class KucoinApi {
         }
       }
       w.onclose = (e) => {
-        this.handleLog('Kucoin WS closed', e.code)
+        const msg = `Kucoin WS closed, code: ${e.code}, reason: ${e.reason}, retry: ${w.retryCount}`
+        this.handleLog(msg)
+        const fn = this.sockets[type].onError
+        if (fn) {
+          fn(msg)
+        }
       }
+
       return w
     }
   }
@@ -1049,6 +1060,7 @@ class KucoinApi {
     type: RequestType,
     retry?: (...args: any[]) => any,
     token?: WSTokenResponseToUse,
+    onError?: (msg: string) => void,
   ) {
     if (this.sockets[type].ws) {
       return this.sockets[type].ws
@@ -1071,6 +1083,7 @@ class KucoinApi {
             pingTimeout: 0,
             cb: [{ fn: this.handleWsMessage, topic: HANDLE_MESSAGE }],
             pending: false,
+            onError,
           }
           for (const call of this.sockets[type].callOnConnect) {
             await call()
@@ -1253,6 +1266,7 @@ class KucoinApi {
       ticker: async (
         symbols: string[],
         callback: (msg: FullTicker) => void | Promise<void>,
+        onError?: (msg: string) => void,
       ) => {
         if (symbols.length > 0) {
           const thisCb = (msg: WSMessage) => {
@@ -1264,13 +1278,14 @@ class KucoinApi {
             }
           }
           const topic = `/market/ticker:${symbols.join(',')}`
-          await this.getWs('public', undefined, token)
+          await this.getWs('public', undefined, token, onError)
           this.handleSubscribe('public', topic, thisCb)
           return () => this.handleUnsubscribe('public', topic)
         }
       },
       tickerAll: async (
         callback: (msg: FullTicker) => void | Promise<void>,
+        onError?: (msg: string) => void,
       ) => {
         const thisCb = (msg: WSMessage) => {
           if (
@@ -1281,12 +1296,13 @@ class KucoinApi {
           }
         }
         const topic = `/market/ticker:all`
-        await this.getWs('public', undefined, token)
+        await this.getWs('public', undefined, token, onError)
         this.handleSubscribe('public', topic, thisCb)
         return () => this.handleUnsubscribe('public', topic)
       },
       order: async (
         callback: (msg: ExecutionReport) => void | Promise<void>,
+        onError?: (msg: string) => void,
       ) => {
         const thisCb = (msg: WSMessage) => {
           if (
@@ -1298,12 +1314,14 @@ class KucoinApi {
           }
         }
         const topic = `/spotMarket/tradeOrders`
-        await this.getWs('private', undefined, token)
+        await this.getWs('private', undefined, token, onError)
+
         this.handleSubscribe('private', topic, thisCb)
         return () => this.handleUnsubscribe('private', topic)
       },
       balance: async (
         callback: (msg: OutboundAccountPosition) => void | Promise<void>,
+        onError?: (msg: string) => void,
       ) => {
         const thisCb = (msg: WSMessage) => {
           if (
@@ -1316,13 +1334,14 @@ class KucoinApi {
           }
         }
         const topic = `/account/balance`
-        await this.getWs('private', undefined, token)
+        await this.getWs('private', undefined, token, onError)
         this.handleSubscribe('private', topic, thisCb)
         return () => this.handleUnsubscribe('private', topic)
       },
       klines: async (
         params: { symbol: string; type: string },
         callback: (msg: WSKlinesUpdate) => void | Promise<void>,
+        onError?: (msg: string) => void,
       ) => {
         const thisCb = (msg: WSMessage) => {
           if (
@@ -1337,7 +1356,7 @@ class KucoinApi {
           }
         }
         const topic = `/market/candles:${params.symbol}_${params.type}`
-        await this.getWs('public', undefined, token)
+        await this.getWs('public', undefined, token, onError)
         this.handleSubscribe('public', topic, thisCb)
         return () => this.handleUnsubscribe('public', topic)
       },
