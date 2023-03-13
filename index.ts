@@ -536,6 +536,7 @@ class KucoinApi {
       checkPong: NodeJS.Timer | null
       topics: Set<string>
       onError?: (msg: string) => void
+      pingError: number
     }
   }
   private orderFills: {
@@ -578,6 +579,7 @@ class KucoinApi {
         checkPong: null,
         topics: new Set<string>(),
         onError: () => null,
+        pingError: 0,
       },
       private: {
         ws: null,
@@ -592,6 +594,7 @@ class KucoinApi {
         lastPong: null,
         topics: new Set<string>(),
         onError: () => null,
+        pingError: 0,
       },
     }
   }
@@ -993,7 +996,12 @@ class KucoinApi {
                     (this.sockets[type].lastPing || 0)
                   : token.server.pingTimeout * 1000
               if (diff > token.server.pingTimeout || diff < 0) {
-                this.handleLog(`Ping-pong timeout exceeded ${diff}ms`)
+                this.sockets[type].pingError += 1
+                if (this.sockets[type].pingError >= 5) {
+                  throw new Error(
+                    `Ping error ${this.sockets[type].pingError} times`,
+                  )
+                }
                 this.sockets[type].ws?.reconnect()
                 /*const subscribers = this.sockets[type].cb
                 this.closeWs(type)
