@@ -357,6 +357,7 @@ export type WSKlinesUpdate = {
   candles: string[]
   /** time in ns */
   time: number
+  interval: string
 }
 
 export type WSKlines = {
@@ -1358,7 +1359,7 @@ class KucoinApi {
               return
             }
             this.lastData.set(msg.topic, msg.data.time)
-            callback(msg.data)
+            callback({ ...msg.data, interval: msg.topic.split('_')[1] })
           }
         }
         const topic = `/market/candles:${params.symbol}_${params.type}`
