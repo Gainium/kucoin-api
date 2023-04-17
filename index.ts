@@ -513,9 +513,9 @@ const SUCCESS_CODE = '200000'
 
 const HANDLE_MESSAGE = 'handleMessage'
 
-const sleep = (milliseconds: number): Promise<void> => {
+/*const sleep = (milliseconds: number): Promise<void> => {
   return new Promise((resolve) => setTimeout(resolve, milliseconds))
-}
+}*/
 
 class KucoinApi {
   private key: string
@@ -1147,7 +1147,6 @@ class KucoinApi {
     ) {
       this.closeWs(type)
     }
-    await sleep(200)
   }
   @IdMute(mutex, () => 'subscribe')
   private async handleSubscribe(
@@ -1185,7 +1184,6 @@ class KucoinApi {
         )
       }
     }
-    await sleep(200)
   }
   private convertOrderUpdate(msg: WSUpdateOrder): ExecutionReport {
     let find = this.orderFills.find((o) => o.orderId === msg.orderId)
