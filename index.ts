@@ -1003,6 +1003,7 @@ class KucoinApi {
                     `Ping error ${this.sockets[type].pingError} times`,
                   )
                 }
+                this.sockets[type].topics.clear()
                 this.sockets[type].ws?.reconnect()
                 /*const subscribers = this.sockets[type].cb
                 this.closeWs(type)
@@ -1022,6 +1023,7 @@ class KucoinApi {
         if (fn) {
           fn(msg)
         }
+        this.sockets[type].topics.clear()
       }
 
       return w
