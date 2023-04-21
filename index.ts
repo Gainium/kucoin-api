@@ -6,6 +6,10 @@ import ReconnectingWebSocket from 'reconnecting-websocket'
 import { v4 } from 'uuid'
 import { IdMute, IdMutex } from './mutex'
 
+const sleep = (milliseconds: number): Promise<void> => {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds))
+}
+
 const mutex = new IdMutex()
 
 export type UnPromise<T> = T extends Promise<infer U> ? U : T
@@ -963,7 +967,7 @@ class KucoinApi {
         this.handleLog(msg)
         throw new Error(msg)
       }
-      w.onopen = () => {
+      w.onopen = async () => {
         this.handleLog(`Kucoin WS started, retry ${w.retryCount}`)
         this.sockets[type].lastPing = 0
         this.sockets[type].lastPong = 0
@@ -983,6 +987,7 @@ class KucoinApi {
           )*/
           for (const s of this.sockets[type].cb) {
             this.handleSubscribe(type, s.topic, s.fn)
+            await sleep(2500)
           }
         }
         if (typeof window === 'undefined') {
