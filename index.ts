@@ -8,6 +8,10 @@ import { IdMute, IdMutex } from './mutex'
 
 const mutex = new IdMutex()
 
+const sleep = (milliseconds: number): Promise<void> => {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds))
+}
+
 export type UnPromise<T> = T extends Promise<infer U> ? U : T
 
 export type AnyObject = { [x: string]: string | number | boolean }
@@ -1163,6 +1167,8 @@ class KucoinApi {
         }
         if (this.sockets[type].topics.has(topic)) {
           this.handleLog(`Connection already exist ${topic}. Resubscribe`)
+          await this.handleUnsubscribe(type, topic)
+          await sleep(200)
         }
         const id = +new Date() * Math.random()
         this.sockets[type].ws?.send(
