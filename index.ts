@@ -1162,8 +1162,7 @@ class KucoinApi {
           return
         }
         if (this.sockets[type].topics.has(topic)) {
-          this.handleLog(`Connection already exist ${topic}`)
-          return
+          this.handleLog(`Connection already exist ${topic}. Resubscribe`)
         }
         const id = +new Date() * Math.random()
         this.sockets[type].ws?.send(
