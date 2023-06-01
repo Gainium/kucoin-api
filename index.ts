@@ -761,8 +761,8 @@ class KucoinApi {
     GET /api/v1/orders
     */
   public async getOrders(params: {
-    status: OrderActiveStatus
-    symbol: string
+    status?: OrderActiveStatus
+    symbol?: string
     side?: OrderSide
     tradeType: TradeType
   }) {
