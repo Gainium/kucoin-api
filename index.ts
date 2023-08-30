@@ -697,6 +697,7 @@ class KucoinApi {
     method: Methods,
     params: AnyObject,
     type: RequestType,
+    count = 1,
   ): Promise<Result<T>> {
     if (
       type === 'private' &&
@@ -721,6 +722,21 @@ class KucoinApi {
       const result = await fetch(url, config)
       return await this.handleResult(result)
     } catch (e) {
+      if (
+        `${(e as any)?.message}`
+          .toLowerCase()
+          .indexOf('fetch failed'.toLowerCase()) !== -1 &&
+        count < 5
+      ) {
+        await sleep(500)
+        return await this.sendRequest<T>(
+          endpoint,
+          method,
+          params,
+          type,
+          count + 1,
+        )
+      }
       return {
         status: NOTOK,
         data: null,
