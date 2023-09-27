@@ -1003,11 +1003,11 @@ class KucoinApi {
                   : token.server.pingTimeout * 1000
               if (diff > token.server.pingTimeout || diff < 0) {
                 this.sockets[type].pingError += 1
-                if (this.sockets[type].pingError >= 5) {
+                /* if (this.sockets[type].pingError >= 5) {
                   throw new Error(
                     `Ping error ${this.sockets[type].pingError} times`,
                   )
-                }
+                } */
                 this.sockets[type].topics.clear()
                 this.sockets[type].ws?.reconnect()
                 /*const subscribers = this.sockets[type].cb
