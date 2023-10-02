@@ -974,6 +974,7 @@ class KucoinApi {
   private async connectWS(
     type: RequestType,
     tokenToUse?: WSTokenResponseToUse,
+    onError?: (msg: string) => void,
   ) {
     const token = tokenToUse || (await this.getWsUrl(type))
     if (token) {
@@ -1019,11 +1020,9 @@ class KucoinApi {
                   : token.server.pingTimeout * 1000
               if (diff > token.server.pingTimeout || diff < 0) {
                 this.sockets[type].pingError += 1
-                /* if (this.sockets[type].pingError >= 5) {
-                  throw new Error(
-                    `Ping error ${this.sockets[type].pingError} times`,
-                  )
-                } */
+                if (this.sockets[type].pingError >= 5 && onError) {
+                  onError(`Ping error ${this.sockets[type].pingError} times`)
+                }
                 this.sockets[type].topics.clear()
                 this.sockets[type].ws?.reconnect()
                 /*const subscribers = this.sockets[type].cb
@@ -1100,7 +1099,7 @@ class KucoinApi {
     if (!this.sockets[type].pending) {
       this.sockets[type].pending = true
       try {
-        const ws = await this.connectWS(type, token)
+        const ws = await this.connectWS(type, token, onError)
         if (ws) {
           ws.onmessage = (msg) => {
             for (const cb of this.sockets[type].cb) {
