@@ -1022,15 +1022,15 @@ class KucoinApi {
                 this.sockets[type].pingError += 1
                 if (this.sockets[type].pingError >= 5 && onError) {
                   onError(`Ping error ${this.sockets[type].pingError} times`)
+                  const subscribers = this.sockets[type].cb
+                  this.closeWs(type)
+                  await this.getWs(type, undefined, token, onError)
+                  for (const s of subscribers) {
+                    this.handleSubscribe(type, s.topic, s.fn)
+                  }
                 }
-                this.sockets[type].topics.clear()
-                this.sockets[type].ws?.reconnect()
-                /*const subscribers = this.sockets[type].cb
-                this.closeWs(type)
-                await this.getWs(type)
-                for (const s of subscribers) {
-                  this.handleSubscribe(type, s.topic, s.fn)
-                }*/
+                /* this.sockets[type].topics.clear()
+                this.sockets[type].ws?.reconnect() */
               }
             }, token.server.pingTimeout)
           }, token.server.pingInterval)
