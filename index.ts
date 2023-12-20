@@ -1024,7 +1024,7 @@ class KucoinApi {
                   onError(`Ping error ${this.sockets[type].pingError} times`)
                   const subscribers = this.sockets[type].cb
                   this.closeWs(type)
-                  await this.getWs(type, undefined, token, onError)
+                  await this.getWs(type, undefined, undefined, onError)
                   for (const s of subscribers) {
                     this.handleSubscribe(type, s.topic, s.fn)
                   }
