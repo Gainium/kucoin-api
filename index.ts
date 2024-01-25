@@ -1009,10 +1009,20 @@ class KucoinApi {
         }
         if (typeof window === 'undefined') {
           this.sockets[type].timer = setInterval(() => {
+            if (!this.sockets[type].ws?.OPEN) {
+              if (this.sockets[type].timer) {
+                clearInterval(this.sockets[type].timer as NodeJS.Timer)
+              }
+            }
             //@ts-ignore
             w._ws.ping()
             this.sockets[type].lastPing = Date.now()
             this.sockets[type].checkPong = setTimeout(async () => {
+              if (!this.sockets[type].ws?.OPEN) {
+                if (this.sockets[type].checkPong) {
+                  clearInterval(this.sockets[type].checkPong as NodeJS.Timer)
+                }
+              }
               const diff =
                 this.sockets[type].lastPong && this.sockets[type].lastPing
                   ? (this.sockets[type].lastPong || 0) -
