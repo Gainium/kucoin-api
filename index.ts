@@ -549,6 +549,7 @@ class KucoinApi {
     fills: { price: string; qty: string; tradeId: string }[]
   }[]
   private lastData: Map<string, number> = new Map()
+  private _onError = true
   constructor(
     params?: {
       key?: string
@@ -574,6 +575,9 @@ class KucoinApi {
   }
   private handleLog(...args: any[]) {
     console.log(new Date(), ` | ${args}`)
+  }
+  set onError(bool: boolean) {
+    this._onError = bool
   }
   private defaultWs() {
     return {
@@ -1022,10 +1026,20 @@ class KucoinApi {
         }
         if (typeof window === 'undefined') {
           this.sockets[type].timer = setInterval(() => {
+            if (!this.sockets[type].ws?.OPEN) {
+              if (this.sockets[type].timer) {
+                clearInterval(this.sockets[type].timer as NodeJS.Timer)
+              }
+            }
             //@ts-ignore
             w._ws.ping()
             this.sockets[type].lastPing = Date.now()
             this.sockets[type].checkPong = setTimeout(async () => {
+              if (!this.sockets[type].ws?.OPEN) {
+                if (this.sockets[type].checkPong) {
+                  clearInterval(this.sockets[type].checkPong as NodeJS.Timer)
+                }
+              }
               const diff =
                 this.sockets[type].lastPong && this.sockets[type].lastPing
                   ? (this.sockets[type].lastPong || 0) -
@@ -1033,7 +1047,11 @@ class KucoinApi {
                   : token.server.pingTimeout * 1000
               if (diff > token.server.pingTimeout || diff < 0) {
                 this.sockets[type].pingError += 1
-                if (this.sockets[type].pingError >= 5 && onError) {
+                if (
+                  this.sockets[type].pingError >= 5 &&
+                  onError &&
+                  this.onError
+                ) {
                   onError(`Ping error ${this.sockets[type].pingError} times`)
                   const subscribers = this.sockets[type].cb
                   this.closeWs(type)
@@ -1053,7 +1071,7 @@ class KucoinApi {
         const msg = `Kucoin WS closed, code: ${e.code}, reason: ${e.reason}, retry: ${w.retryCount}`
         this.handleLog(msg)
         const fn = this.sockets[type].onError
-        if (fn) {
+        if (fn && this._onError) {
           fn(msg)
         }
         this.sockets[type].topics.clear()
