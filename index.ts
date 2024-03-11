@@ -549,12 +549,18 @@ class KucoinApi {
     fills: { price: string; qty: string; tradeId: string }[]
   }[]
   private lastData: Map<string, number> = new Map()
-  constructor(params?: {
-    key?: string
-    secret?: string
-    passphrase?: string
-    environment?: 'live' | 'sandbox'
-  }) {
+  constructor(
+    params?: {
+      key?: string
+      secret?: string
+      passphrase?: string
+      environment?: 'live' | 'sandbox'
+    },
+    private broker?: {
+      id: string
+      secret: string
+    },
+  ) {
     this.key = params?.key || ''
     this.secret = params?.secret || ''
     this.passphrase = params?.passphrase || ''
@@ -633,6 +639,13 @@ class KucoinApi {
       headers['KC-API-KEY'] = this.key
       headers['KC-API-PASSPHRASE'] = passphraseResult
       headers['KC-API-KEY-VERSION'] = '2'
+      if (this.broker) {
+        headers['KC-API-PARTNER'] = this.broker.id
+        headers['KC-API-PARTNER-SIGN'] = crypto
+          .createHmac('sha256', this.broker.secret)
+          .update(`${nonce}${this.broker.id}${this.key}`)
+          .digest('base64')
+      }
     }
     return headers
   }
