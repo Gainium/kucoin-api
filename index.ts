@@ -35,6 +35,17 @@ export type AccountBalance = {
   available: string
   holds: string
 }
+
+export type FuturesAccountDetails = {
+  accountEquity: number
+  unrealisedPNL: number
+  marginBalance: number
+  positionMargin: number
+  orderMargin: number
+  frozenFunds: number
+  availableBalance: number
+  currency: string
+}
 export type Response<T> = {
   code: string
   data: T | null
@@ -173,6 +184,7 @@ export type KucoinOrder = {
   cancelExist: boolean
   createdAt: number
   tradeType: TradeType
+  reduceOnly?: boolean
 }
 export type Paginated<T> = {
   currentPage: number
@@ -214,6 +226,50 @@ export type Ticker = {
   bestBid: string
   bestAskSize: string
   time: number
+}
+
+export type BooleanString = 'False' | 'True'
+
+export type Position = {
+  id: string
+  symbol: string
+  autoDeposit: BooleanString
+  maintMarginReq: number
+  riskLimit: number
+  realLeverage: number
+  crossMode: BooleanString
+  delevPercentage: number
+  openingTimestamp: number
+  currentTimestamp: number
+  currentQty: number
+  currentCost: number
+  currentComm: number
+  unrealisedCost: number
+  realisedGrossCost: number
+  realisedCost: number
+  isOpen: BooleanString
+  markPrice: number
+  markValue: number
+  posCost: number
+  posCross: number
+  posInit: number
+  posComm: number
+  posLoss: number
+  posMargin: number
+  posMaint: number
+  maintMargin: number
+  realisedGrossPnl: number
+  realisedPnl: number
+  unrealisedPnl: number
+  unrealisedPnlPcnt: number
+  unrealisedRoePcnt: number
+  avgEntryPrice: number
+  liquidationPrice: number
+  bankruptPrice: number
+  settleCurrency: number
+  maintainMargin: number
+  userId: number
+  riskLimitLevel: number
 }
 
 export type AllTicker = {
@@ -269,6 +325,7 @@ export enum WSSubjectEnum {
   orderChange = 'orderChange',
   balance = 'account.balance',
   klines = 'trade.candles.update',
+  futuresBalance = 'availableBalance.change',
 }
 
 export enum WSTypesEnum {
@@ -279,9 +336,24 @@ export enum WSTypesEnum {
 
 export enum WSMessageTopicEnum {
   tickerAll = '/market/ticker:all',
-  orderChange = '/spotMarket/tradeOrders',
+  orderChange = '/spotMarket/tradeOrdersV2',
   balance = '/account/balance',
   klines = '/market/candles:',
+  futuresBalance = '/contractAccount/wallet',
+}
+
+export type FuturesBalanceWsMessageData = {
+  availableBalance: number
+  holdBalance: number
+  currency: string
+  timestamp: number
+}
+
+export type WSFuturesBalanceMessage = {
+  topic: WSMessageTopicEnum.futuresBalance
+  subject: WSSubjectEnum.futuresBalance
+  data: FuturesBalanceWsMessageData
+  type: WSMessageTopicEnum.futuresBalance
 }
 
 export type WSTickerMessage = {
@@ -330,7 +402,7 @@ export type WSUpdateOrder = {
   orderType: OrderType
   side: OrderSide
   orderId: string
-  type: 'open' | 'match' | 'filled' | 'canceled' | 'update'
+  type: 'open' | 'match' | 'filled' | 'canceled' | 'update' | 'received'
   /** time in nanoseconds */
   orderTime: number
   size: string
@@ -339,7 +411,7 @@ export type WSUpdateOrder = {
   price: string
   clientOid: string
   remainSize: string
-  status: 'open' | 'match' | 'done'
+  status: 'open' | 'match' | 'done' | 'new'
   /** time in nanoseconds */
   ts: number
   liquidity: Liquidity
@@ -378,6 +450,7 @@ export type WSMessage =
   | WSOrderChangeMessage
   | WSBalanceMessage
   | WSKlines
+  | WSFuturesBalanceMessage
 
 export type WSTicker = {
   bestAsk: string
@@ -416,6 +489,64 @@ export type KucoinSymbol = {
   minFunds: string
   isMarginEnabled: boolean
   enableTrading: boolean
+}
+
+export type FuturesKucoinSymbols = {
+  symbol: string
+  rootSymbol: string
+  type: string
+  firstOpenDate: number
+  expireDate: Date
+  settleDate: Date
+  baseCurrency: string
+  quoteCurrency: string
+  settleCurrency: string
+  maxOrderQty: number
+  maxPrice: number
+  lotSize: number
+  tickSize: number
+  indexPriceTickSize: number
+  multiplier: number
+  initialMargin: number
+  maintainMargin: number
+  maxRiskLimit: number
+  minRiskLimit: number
+  riskStep: number
+  makerFeeRate: number
+  takerFeeRate: number
+  takerFixFee: number
+  makerFixFee: number
+  settlementFee: number
+  isDeleverage: boolean
+  isQuanto: boolean
+  isInverse: boolean
+  markMethod: string
+  fairMethod: string
+  fundingBaseSymbol: string
+  fundingQuoteSymbol: string
+  fundingRateSymbol: string
+  indexSymbol: string
+  settlementSymbol: string
+  status: 'Open' | 'Closed'
+  fundingFeeRate: number
+  predictedFundingFeeRate: number
+  openInterest: string
+  turnoverOf24h: number
+  volumeOf24h: number
+  markPrice: number
+  indexPrice: number
+  lastTradePrice: number
+  nextFundingRateTime: number
+  maxLeverage: number
+  sourceExchanges: string[]
+  premiumsSymbol1M: string
+  premiumsSymbol8H: string
+  fundingBaseSymbol1M: string
+  fundingQuoteSymbol1M: string
+  lowPrice: number
+  highPrice: number
+  priceChgPct: number
+  priceChg: number
 }
 
 export type ConvertedWsTicker = { symbol: string } & WSTicker
@@ -527,6 +658,7 @@ class KucoinApi {
   private secret: string
   private passphrase: string
   private url: string
+  private futuresUrl: string
   private sockets: {
     [x in RequestType]: {
       ws: ReconnectingWebSocket | null
@@ -555,20 +687,23 @@ class KucoinApi {
       key?: string
       secret?: string
       passphrase?: string
-      environment?: 'live' | 'sandbox'
     },
     private broker?: {
-      id: string
-      secret: string
+      spot: {
+        id: string
+        secret: string
+      }
+      futures: {
+        id: string
+        secret: string
+      }
     },
   ) {
     this.key = params?.key || ''
     this.secret = params?.secret || ''
     this.passphrase = params?.passphrase || ''
     this.url = 'https://api.kucoin.com'
-    if (params?.environment === 'sandbox') {
-      this.url = 'https://openapi-sandbox.kucoin.com'
-    }
+    this.futuresUrl = 'https://api-futures.kucoin.com'
     this.sockets = this.defaultWs()
     this.handleWsMessage = this.handleWsMessage.bind(this)
     this.orderFills = []
@@ -618,6 +753,7 @@ class KucoinApi {
     params: AnyObject,
     method: Methods,
     type: RequestType,
+    futures: boolean,
   ) {
     const headers: { [x: string]: string } = {
       'Content-Type': 'application/json',
@@ -644,10 +780,15 @@ class KucoinApi {
       headers['KC-API-PASSPHRASE'] = passphraseResult
       headers['KC-API-KEY-VERSION'] = '2'
       if (this.broker) {
-        headers['KC-API-PARTNER'] = this.broker.id
+        headers['KC-API-PARTNER'] = futures
+          ? this.broker.futures.id
+          : this.broker.spot.id
         headers['KC-API-PARTNER-SIGN'] = crypto
-          .createHmac('sha256', this.broker.secret)
-          .update(`${nonce}${this.broker.id}${this.key}`)
+          .createHmac(
+            'sha256',
+            futures ? this.broker.futures.secret : this.broker.spot.secret,
+          )
+          .update(`${nonce}${headers['KC-API-PARTNER']}${this.key}`)
           .digest('base64')
       }
     }
@@ -714,6 +855,7 @@ class KucoinApi {
     method: Methods,
     params: AnyObject,
     type: RequestType,
+    futures = false,
     count = 1,
   ): Promise<Result<T>> {
     if (
@@ -727,13 +869,13 @@ class KucoinApi {
         reasonCode: '1',
       }
     }
-    const url = `${this.url}${endpoint}${
+    const url = `${futures ? this.futuresUrl : this.url}${endpoint}${
       method === 'POST' ? '' : this.formatQuery(params)
     }`
     const config = {
       method,
       body: method === 'POST' ? JSON.stringify(params) : undefined,
-      headers: this.sign(endpoint, params, method, type),
+      headers: this.sign(endpoint, params, method, type, !!futures),
     }
     try {
       const result = await fetch(url, config)
@@ -751,6 +893,7 @@ class KucoinApi {
           method,
           params,
           type,
+          futures,
           count + 1,
         )
       }
@@ -761,6 +904,19 @@ class KucoinApi {
         reasonCode: (e as any).cause.errno,
       }
     }
+  }
+  /* 
+    Get Account Detail - Futures
+    GET /api/v1/account-overview
+    */
+  public async getFuturesAccounts(params: GetAccountsInput = {}) {
+    return await this.sendRequest<FuturesAccountDetails>(
+      `/api/v1/account-overview`,
+      'GET',
+      params,
+      'private',
+      true,
+    )
   }
   /* 
     List Accounts
@@ -788,6 +944,22 @@ class KucoinApi {
     )
   }
   /* 
+    Place a new order
+    POST /api/v1/orders
+    Details for market order vs. limit order and params see https://docs.kucoin.com/#place-a-new-order
+    */
+  public async placeFuturesOrder(
+    params: CommonOrderConfig & { leverage: number },
+  ) {
+    return await this.sendRequest<OrderResponse>(
+      '/api/v1/orders',
+      'POST',
+      params,
+      'private',
+      true,
+    )
+  }
+  /*
     Cancel an order
     DELETE /api/v1/orders/<order-id>
     */
@@ -801,14 +973,27 @@ class KucoinApi {
   }
   /* 
     Get Symbols List
-    GET /api/v1/symbols
+    GET /api/v2/symbols
     */
   public async getSymbols() {
     return await this.sendRequest<KucoinSymbol[]>(
-      '/api/v1/symbols',
+      '/api/v2/symbols',
       'GET',
       {},
       'public',
+    )
+  }
+  /* 
+    Get Futures Symbols List
+    GET /api/v1/contracts/active
+    */
+  public async getFuturesSymbols() {
+    return await this.sendRequest<FuturesKucoinSymbols[]>(
+      '/api/v1/contracts/active',
+      'GET',
+      {},
+      'public',
+      true,
     )
   }
   /* 
@@ -829,6 +1014,23 @@ class KucoinApi {
     )
   }
   /* 
+    List orders
+    GET /api/v1/orders
+    */
+  public async getFuturesOrders(params: {
+    status?: OrderActiveStatus
+    symbol?: string
+    side?: OrderSide
+  }) {
+    return await this.sendRequest<ListOrders>(
+      '/api/v1/orders',
+      'GET',
+      params,
+      'private',
+      true,
+    )
+  }
+  /* 
     Get an order
     GET /api/v1/orders/<order-id>
     */
@@ -838,6 +1040,19 @@ class KucoinApi {
       'GET',
       {},
       'private',
+    )
+  }
+  /* 
+    Get an order
+    GET /api/v1/orders/<order-id>
+    */
+  public async getFuturesOrderById(params: { id: string }) {
+    return await this.sendRequest<KucoinOrder>(
+      `/api/v1/orders/${params.id}`,
+      'GET',
+      {},
+      'private',
+      true,
     )
   }
   /* 
@@ -851,6 +1066,28 @@ class KucoinApi {
       {},
       'private',
     )
+  }
+  /* 
+    Get an order by client ID
+    GET /api/v1/order/client-order/{clientOid}
+    */
+  public async getFuturesOrderByClientId(params: { clientOid: string }) {
+    return await this.sendRequest<KucoinOrder>(
+      `/api/v1/order/client-order/byClientOid`,
+      'GET',
+      params,
+      'private',
+      true,
+    )
+  }
+  /* 
+    Cancel an order by client ID
+    DELETE /api/v1/order/client-order/{clientOid}
+    */
+  public async cancelFuturesOrderByClientId(params: { id: string }) {
+    return await this.sendRequest<{
+      clientOid: string
+    }>(`/api/v1/order/client-order/${params.id}`, 'DELETE', {}, 'private', true)
   }
   /* 
     Cancel an order by client ID
@@ -887,6 +1124,45 @@ class KucoinApi {
     )
   }
   /*  
+    Get Ticker
+    GET /api/v1/market/orderbook/level1?symbol=<symbol>
+    */
+  public async getFuturesTicker(params: { symbol: string }) {
+    return await this.sendRequest<Ticker>(
+      `/api/v1/ticker`,
+      'GET',
+      params,
+      'private',
+      true,
+    )
+  }
+  /*  
+    Get Positions
+    GET /api/v1/positions
+    */
+  public async getFuturesPositions() {
+    return await this.sendRequest<Position[]>(
+      `/api/v1/positions`,
+      'GET',
+      {},
+      'private',
+      true,
+    )
+  }
+  /*  
+    Get Position by symbol
+    GET /api/v1/positions
+    */
+  public async getFuturesPositionBySymbol(params: { symbol: string }) {
+    return await this.sendRequest<Position>(
+      `/api/v1/position`,
+      'GET',
+      params,
+      'private',
+      true,
+    )
+  }
+  /*  
     Get All Tickers
     GET /api/v1/market/allTickers
     */
@@ -908,6 +1184,19 @@ class KucoinApi {
       'GET',
       {},
       'private',
+    )
+  }
+  /*  
+    Get Fee
+    GET /api/v1/trade-fees?symbols=[symbols]
+    */
+  public async getFuturesFees(symbols: string[]) {
+    return await this.sendRequest<Fee[]>(
+      `/api/v1/trade-fees?symbols=${symbols.join(',')}`,
+      'GET',
+      {},
+      'private',
+      true,
     )
   }
   /*  
@@ -937,6 +1226,24 @@ class KucoinApi {
       'GET',
       params,
       'public',
+    )
+  }
+  /*  
+    Get Klines
+    GET /api/v1/market/candles
+    */
+  public async getFuturesKlines(params: {
+    symbol: string
+    startAt?: number
+    endAt?: number
+    granularity: number
+  }) {
+    return await this.sendRequest<Kline>(
+      `/api/v1/market/candles`,
+      'GET',
+      params,
+      'public',
+      true,
     )
   }
   public async getWsUrl(type: RequestType) {
@@ -1271,6 +1578,8 @@ class KucoinApi {
         find,
       ]
     }
+    const openStatuses = ['open', 'new']
+    const openTypes = ['open', 'received']
     return {
       creationTime: convertTime(msg.orderTime),
       eventTime: convertTime(msg.ts),
@@ -1289,11 +1598,11 @@ class KucoinApi {
           ? 'FILLED'
           : (msg.type === 'match' && msg.status === 'match') ||
             (msg.type === 'match' && msg.status === 'open') ||
-            (msg.type === 'open' &&
-              msg.status === 'open' &&
+            (openTypes.includes(msg.type) &&
+              openStatuses.includes(msg.status) &&
               msg.filledSize !== '0')
           ? 'PARTIALLY_FILLED'
-          : msg.type === 'open' && msg.status === 'open'
+          : openTypes.includes(msg.type) && openStatuses.includes(msg.status)
           ? 'NEW'
           : 'CANCELED',
       orderType: msg.orderType === 'limit' ? 'LIMIT' : 'MARKET',
@@ -1374,7 +1683,7 @@ class KucoinApi {
             callback(this.convertOrderUpdate(msg.data))
           }
         }
-        const topic = `/spotMarket/tradeOrders`
+        const topic = `/spotMarket/tradeOrdersV2`
         await this.getWs('private', undefined, token, onError)
 
         this.handleSubscribe('private', topic, thisCb)
