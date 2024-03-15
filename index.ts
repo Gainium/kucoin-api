@@ -1186,19 +1186,7 @@ class KucoinApi {
       'private',
     )
   }
-  /*  
-    Get Fee
-    GET /api/v1/trade-fees?symbols=[symbols]
-    */
-  public async getFuturesFees(symbols: string[]) {
-    return await this.sendRequest<Fee[]>(
-      `/api/v1/trade-fees?symbols=${symbols.join(',')}`,
-      'GET',
-      {},
-      'private',
-      true,
-    )
-  }
+
   /*  
     Get Base Fee
     GET /api/v1/base-fee
