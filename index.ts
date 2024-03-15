@@ -1218,7 +1218,7 @@ class KucoinApi {
   }
   /*  
     Get Klines
-    GET /api/v1/market/candles
+    GET /api/v1/kline/query
     */
   public async getFuturesKlines(params: {
     symbol: string
@@ -1227,7 +1227,7 @@ class KucoinApi {
     granularity: number
   }) {
     return await this.sendRequest<Kline>(
-      `/api/v1/market/candles`,
+      `/api/v1/kline/query`,
       'GET',
       params,
       'public',
