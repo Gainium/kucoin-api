@@ -931,6 +931,7 @@ class KucoinApi {
     const url = `${futures ? this.futuresUrl : this.url}${endpoint}${
       method === 'POST' ? '' : this.formatQuery(params)
     }`
+    console.log(url)
     const config = {
       method,
       body: method === 'POST' ? JSON.stringify(params) : undefined,
@@ -1128,11 +1129,11 @@ class KucoinApi {
   }
   /* 
     Get an order by client ID
-    GET /api/v1/order/client-order/{clientOid}
+    GET /api/v1/orders/byClientOid
     */
   public async getFuturesOrderByClientId(params: { clientOid: string }) {
     return await this.sendRequest<KucoinOrder>(
-      `/api/v1/order/client-order/byClientOid`,
+      `/api/v1/orders/byClientOid`,
       'GET',
       params,
       'private',
@@ -1141,12 +1142,21 @@ class KucoinApi {
   }
   /* 
     Cancel an order by client ID
-    DELETE /api/v1/order/client-order/{clientOid}
+    DELETE /api/v1/orders/client-order/{clientOid}
     */
-  public async cancelFuturesOrderByClientId(params: { id: string }) {
+  public async cancelFuturesOrderByClientId(params: {
+    id: string
+    symbol: string
+  }) {
     return await this.sendRequest<{
       clientOid: string
-    }>(`/api/v1/order/client-order/${params.id}`, 'DELETE', {}, 'private', true)
+    }>(
+      `/api/v1/orders/client-order/${params.id}`,
+      'DELETE',
+      { symbol: params.symbol },
+      'private',
+      true,
+    )
   }
   /* 
     Cancel an order by client ID
@@ -1191,7 +1201,7 @@ class KucoinApi {
       `/api/v1/ticker`,
       'GET',
       params,
-      'private',
+      'public',
       true,
     )
   }
