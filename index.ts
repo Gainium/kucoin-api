@@ -1714,6 +1714,7 @@ class KucoinApi {
           msg.status === 'done' &&
           msg.filledSize !== '0') ||
         (msg.type === 'filled' && msg.status === 'done') ||
+        (msg.type === 'match' && msg.status === 'done') ||
         (msg.type === 'match' &&
           msg.status === 'match' &&
           msg.remainSize === '0')
