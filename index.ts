@@ -326,6 +326,7 @@ export enum WSSubjectEnum {
   balance = 'account.balance',
   klines = 'trade.candles.update',
   futuresBalance = 'availableBalance.change',
+  ticker = 'ticker',
 }
 
 export enum WSTypesEnum {
@@ -340,6 +341,8 @@ export enum WSMessageTopicEnum {
   balance = '/account/balance',
   klines = '/market/candles:',
   futuresBalance = '/contractAccount/wallet',
+  futuresTicker = '/contractMarket/ticker:',
+  futuresOrder = '/contractMarket/tradeOrders',
 }
 
 export type FuturesBalanceWsMessageData = {
@@ -354,6 +357,20 @@ export type WSFuturesBalanceMessage = {
   subject: WSSubjectEnum.futuresBalance
   data: FuturesBalanceWsMessageData
   type: WSMessageTopicEnum.futuresBalance
+}
+
+export type WSFuturesTickerMessage = {
+  type: WSTypesEnum.message
+  topic: WSMessageTopicEnum.futuresTicker
+  subject: WSSubjectEnum.ticker
+  data: FuturesFullTicker
+}
+
+export type WSFuturesOrderMessage = {
+  type: WSTypesEnum.message
+  topic: WSMessageTopicEnum.futuresOrder
+  subject: WSSubjectEnum.orderChange
+  data: FuturesOrder
 }
 
 export type WSTickerMessage = {
@@ -451,6 +468,8 @@ export type WSMessage =
   | WSBalanceMessage
   | WSKlines
   | WSFuturesBalanceMessage
+  | WSFuturesTickerMessage
+  | WSFuturesOrderMessage
 
 export type WSTicker = {
   bestAsk: string
@@ -598,6 +617,7 @@ export interface ExecutionReport {
   symbol: string // Symbol
   totalQuoteTradeQuantity: string // Cumulative quote asset transacted quantity
   totalTradeQuantity: string // Cumulative filled quantity
+  uniqueMessageId?: string
 }
 
 export type UserDataStreamEvent =
@@ -643,6 +663,44 @@ export interface FullTicker {
   totalTrades: number
 }
 
+export interface FuturesFullTicker {
+  symbol: string
+  sequence: number
+  side: string
+  price: string
+  size: number
+  tradeId: string
+  bestBidSize: number
+  bestBidPrice: string
+  bestAskPrice: string
+  bestAskSize: number
+  ts: number
+}
+
+export interface FuturesOrder {
+  orderId: string
+  symbol: string
+  type: 'open' | 'match' | 'filled' | 'canceled' | 'update' | 'received'
+  feeType: string
+  matchSize: string
+  matchPrice: string
+  orderType: OrderType
+  side: OrderSide
+  price: string
+  size: string
+  remainSize: string
+  filledSize: string
+  canceledSize: string
+  tradeId: string
+  clientOid: string
+  orderTime: number
+  oldSize: string
+  status: 'open' | 'match' | 'done' | 'new'
+  /** time in nanoseconds */
+  ts: number
+  liquidity: Liquidity
+}
+
 export type Kline = string[][]
 
 const SUCCESS_CODE = '200000'
@@ -664,7 +722,7 @@ class KucoinApi {
       ws: ReconnectingWebSocket | null
       pingInterval: number | null
       pingTimeout: number | null
-      cb: { fn: (msg: WSMessage) => any; topic: string }[]
+      cb: { fn: (msg: WSMessage) => any; topics: string[]; signature: string }[]
       pending: boolean
       callOnConnect: ((...args: []) => any)[]
       timer: NodeJS.Timer | null
@@ -672,6 +730,7 @@ class KucoinApi {
       lastPong: number | null
       checkPong: NodeJS.Timer | null
       topics: Set<string>
+      tunnelId?: string
       onError?: (msg: string) => void
       pingError: number
     }
@@ -1315,8 +1374,8 @@ class KucoinApi {
             this.sockets[type].cb,
           )*/
           for (const s of this.sockets[type].cb) {
-            this.handleSubscribe(type, s.topic, s.fn)
-            await sleep(2500)
+            this.handleSubscribe(type, s.topics, s.fn)
+            await sleep(500)
           }
         }
         if (typeof window === 'undefined') {
@@ -1352,7 +1411,7 @@ class KucoinApi {
                   this.closeWs(type)
                   await this.getWs(type, undefined, undefined, onError)
                   for (const s of subscribers) {
-                    this.handleSubscribe(type, s.topic, s.fn)
+                    this.handleSubscribe(type, s.topics, s.fn)
                   }
                 }
                 /* this.sockets[type].topics.clear()
@@ -1405,6 +1464,35 @@ class KucoinApi {
       totalTrades: 0,
     }
   }
+  private convertWsFuturesTicker(msg: WSFuturesTickerMessage): FullTicker {
+    const time = Math.floor(msg.data.ts / 1000 / 1000)
+    return {
+      eventType: '24hrMiniTicker',
+      eventTime: time,
+      curDayClose: msg.data.price,
+      open: msg.data.price,
+      high: msg.data.price,
+      low: msg.data.price,
+      volume: `${msg.data.size}`,
+      volumeQuote: `${msg.data.size}`,
+      symbol: msg.topic.split(':')[1],
+
+      priceChange: '',
+      priceChangePercent: '',
+      weightedAvg: '',
+      prevDayClose: '',
+      closeTradeQuantity: '',
+      bestBid: msg.data.bestBidPrice,
+      bestAsk: msg.data.bestAskPrice,
+      bestAskQnt: `${msg.data.bestAskSize}`,
+      bestBidQnt: `${msg.data.bestBidSize}`,
+      openTime: time,
+      closeTime: time,
+      firstTradeId: 0,
+      lastTradeId: 0,
+      totalTrades: 0,
+    }
+  }
   private handleWsMessage(msg: WSMessage) {
     if (msg.type === WSTypesEnum.welcome) {
       this.handleLog(`Welcome WS Kucoin ${msg.id}`)
@@ -1430,6 +1518,10 @@ class KucoinApi {
           ws.onmessage = (msg) => {
             for (const cb of this.sockets[type].cb) {
               const json = JSON.parse(msg.data) as WSMessage
+              //@ts-ignore
+              /* if (json.topic !== '/market/ticker:all') {
+                console.log(json, cb.topics, cb.signature, cb)
+              } */
               cb.fn(json)
             }
           }
@@ -1438,7 +1530,13 @@ class KucoinApi {
             ws,
             pingInterval: 0,
             pingTimeout: 0,
-            cb: [{ fn: this.handleWsMessage, topic: HANDLE_MESSAGE }],
+            cb: [
+              {
+                fn: this.handleWsMessage,
+                topics: [HANDLE_MESSAGE],
+                signature: HANDLE_MESSAGE,
+              },
+            ],
             pending: false,
             onError,
           }
@@ -1473,64 +1571,90 @@ class KucoinApi {
     this.sockets[type] = this.defaultWs()[type]
   }
   @IdMute(mutex, () => 'unsubscribe')
-  private async handleUnsubscribe(type: RequestType, topic: string) {
+  private async handleUnsubscribe(
+    type: RequestType,
+    _topics: string | string[],
+  ) {
+    const topics = Array.isArray(_topics) ? _topics : [_topics]
+    const signature = topics.join(',')
     this.sockets[type].cb = this.sockets[type].cb.filter(
-      (c) => c.topic !== topic,
+      (c) => c.signature !== signature,
     )
-    if (this.sockets[type].ws) {
-      const id = +new Date() * Math.random()
-      this.sockets[type].ws?.send(
-        JSON.stringify({
-          id: `${type}@${topic}@${id}`,
-          type: 'unsubscribe',
-          topic,
-          response: true,
-        }),
-      )
-      this.sockets[type].topics.delete(topic)
+    for (const topic of topics) {
+      if (this.sockets[type].ws) {
+        const id = +new Date() * Math.random()
+        this.sockets[type].ws?.send(
+          JSON.stringify({
+            id: `${type}@${topic}@${id}`,
+            type: 'unsubscribe',
+            topic,
+            response: true,
+          }),
+        )
+        this.sockets[type].topics.delete(topic)
+      }
     }
     if (
       ((this.sockets[type].cb.length === 1 &&
-        this.sockets[type].cb[0].topic === HANDLE_MESSAGE) ||
+        this.sockets[type].cb[0]?.topics?.[0] === HANDLE_MESSAGE) ||
         this.sockets[type].cb.length === 0) &&
       this.sockets[type].ws
     ) {
       this.closeWs(type)
     }
   }
+  @IdMute(
+    mutex,
+    (_type: unknown, topics: string[]) => `subscribeTopics${topics.join(',')}`,
+  )
+  private async subscribeTopics(type: RequestType, topics: string[]) {
+    for (const topic of topics) {
+      const id = +new Date() * Math.random()
+      this.sockets[type].ws?.send(
+        JSON.stringify({
+          id: `${type}@${topic}@${id}`,
+          type: 'subscribe',
+          topic,
+          privateChannel: type === 'private',
+          response: true,
+        }),
+      )
+      await sleep(500)
+    }
+  }
   @IdMute(mutex, () => 'subscribe')
   private async handleSubscribe(
     type: RequestType,
-    topic: string,
+    _topics: string | string[],
     cbToSet: (msg: WSMessage) => any,
   ) {
+    if (`${_topics}` === HANDLE_MESSAGE) {
+      return
+    }
+    let topics = Array.isArray(_topics) ? _topics : [_topics]
     if (this.sockets[type]) {
       if (this.sockets[type].ws) {
-        if (this.sockets[type].topics.size === 300) {
+        /* if (this.sockets[type].topics.size === 300) {
           this.handleLog('Cannot connect more than 300')
           return
-        }
-        if (this.sockets[type].topics.has(topic)) {
+        } */
+        topics = topics.filter((topic) => !this.sockets[type].topics.has(topic))
+        /* if (this.sockets[type].topics.has(topic)) {
           this.handleLog(`Connection already exist ${topic}`)
           return
+        } */
+        if (!topics.length) {
+          return
         }
-        const id = +new Date() * Math.random()
-        this.sockets[type].ws?.send(
-          JSON.stringify({
-            id: `${type}@${topic}@${id}`,
-            type: 'subscribe',
-            topic,
-            privateChannel: type === 'private',
-            response: true,
-          }),
-        )
-        this.sockets[type].topics.add(topic)
-        if (!this.sockets[type].cb.find((c) => c.topic === topic)) {
-          this.sockets[type].cb.push({ fn: cbToSet, topic })
+        topics.forEach((t) => this.sockets[type].topics.add(t))
+        const signature = topics.join(',')
+        if (!this.sockets[type].cb.find((c) => c.signature === signature)) {
+          this.sockets[type].cb.push({ fn: cbToSet, topics, signature })
         }
+        this.subscribeTopics(type, topics)
       } else if (!this.sockets[type].ws && this.sockets[type].pending) {
         this.sockets[type].callOnConnect.push(() =>
-          this.handleSubscribe(type, topic, cbToSet),
+          this.handleSubscribe(type, topics, cbToSet),
         )
       }
     }
@@ -1607,6 +1731,9 @@ class KucoinApi {
       symbol: msg.symbol,
       totalQuoteTradeQuantity: `${totalQuoteTradeQuantity}`,
       totalTradeQuantity: `${totalTradeQuantity}`,
+      uniqueMessageId: Object.entries(msg)
+        .map(([k, v]) => `${k}:${v}`)
+        .join(','),
     }
   }
   private convertBalanceUpdate(msg: WSBalance): OutboundAccountPosition {
@@ -1616,6 +1743,22 @@ class KucoinApi {
       lastAccountUpdate: 0,
       balances: [
         { asset: msg.currency, free: msg.available, locked: msg.hold },
+      ],
+    }
+  }
+  private convertFuturesBalanceUpdate(
+    msg: WSFuturesBalanceMessage,
+  ): OutboundAccountPosition {
+    return {
+      eventTime: msg.data.timestamp,
+      eventType: 'outboundAccountPosition',
+      lastAccountUpdate: 0,
+      balances: [
+        {
+          asset: msg.data.currency,
+          free: `${msg.data.availableBalance}`,
+          locked: `${msg.data.holdBalance}`,
+        },
       ],
     }
   }
@@ -1658,6 +1801,28 @@ class KucoinApi {
         this.handleSubscribe('public', topic, thisCb)
         return () => this.handleUnsubscribe('public', topic)
       },
+      futuresTicker: async (
+        symbols: string[],
+        callback: (msg: FullTicker) => void | Promise<void>,
+        onError?: (msg: string) => void,
+      ) => {
+        const thisCb = (msg: WSMessage) => {
+          if (
+            (msg as WSFuturesTickerMessage).subject === WSSubjectEnum.ticker &&
+            (msg as WSFuturesTickerMessage).topic.startsWith(
+              WSMessageTopicEnum.futuresTicker,
+            )
+          ) {
+            callback(this.convertWsFuturesTicker(msg as WSFuturesTickerMessage))
+          }
+        }
+        const topics = symbols.map(
+          (symbol) => `/contractMarket/ticker:${symbol}`,
+        )
+        await this.getWs('public', undefined, token, onError)
+        this.handleSubscribe('public', topics, thisCb)
+        return () => this.handleUnsubscribe('public', topics)
+      },
       order: async (
         callback: (msg: ExecutionReport) => void | Promise<void>,
         onError?: (msg: string) => void,
@@ -1672,6 +1837,27 @@ class KucoinApi {
           }
         }
         const topic = `/spotMarket/tradeOrdersV2`
+        await this.getWs('private', undefined, token, onError)
+
+        this.handleSubscribe('private', topic, thisCb)
+        return () => this.handleUnsubscribe('private', topic)
+      },
+      futuresOrder: async (
+        callback: (msg: ExecutionReport) => void | Promise<void>,
+        onError?: (msg: string) => void,
+      ) => {
+        const thisCb = (msg: WSMessage) => {
+          if (
+            (msg as WSFuturesOrderMessage).topic ===
+              WSMessageTopicEnum.futuresOrder &&
+            (msg as WSFuturesOrderMessage).subject === WSSubjectEnum.orderChange
+          ) {
+            callback(
+              this.convertOrderUpdate((msg as WSFuturesOrderMessage).data),
+            )
+          }
+        }
+        const topic = `/contractMarket/tradeOrders`
         await this.getWs('private', undefined, token, onError)
 
         this.handleSubscribe('private', topic, thisCb)
@@ -1692,6 +1878,27 @@ class KucoinApi {
           }
         }
         const topic = `/account/balance`
+        await this.getWs('private', undefined, token, onError)
+        this.handleSubscribe('private', topic, thisCb)
+        return () => this.handleUnsubscribe('private', topic)
+      },
+      futuresBalance: async (
+        callback: (msg: OutboundAccountPosition) => void | Promise<void>,
+        onError?: (msg: string) => void,
+      ) => {
+        const thisCb = (msg: WSMessage) => {
+          if (
+            (msg as WSFuturesBalanceMessage).topic ===
+              WSMessageTopicEnum.futuresBalance &&
+            (msg as WSFuturesBalanceMessage).subject ===
+              WSSubjectEnum.futuresBalance
+          ) {
+            callback(
+              this.convertFuturesBalanceUpdate(msg as WSFuturesBalanceMessage),
+            )
+          }
+        }
+        const topic = `/contractAccount/wallet`
         await this.getWs('private', undefined, token, onError)
         this.handleSubscribe('private', topic, thisCb)
         return () => this.handleUnsubscribe('private', topic)
