@@ -1375,7 +1375,7 @@ class KucoinApi {
           )*/
           for (const s of this.sockets[type].cb) {
             this.handleSubscribe(type, s.topics, s.fn)
-            await sleep(500)
+            await sleep(2500)
           }
         }
         if (typeof window === 'undefined') {
@@ -1619,7 +1619,7 @@ class KucoinApi {
           response: true,
         }),
       )
-      await sleep(500)
+      await sleep(2500)
     }
   }
   @IdMute(mutex, () => 'subscribe')
