@@ -35,6 +35,17 @@ export type AccountBalance = {
   available: string
   holds: string
 }
+
+export type FuturesAccountDetails = {
+  accountEquity: number
+  unrealisedPNL: number
+  marginBalance: number
+  positionMargin: number
+  orderMargin: number
+  frozenFunds: number
+  availableBalance: number
+  currency: string
+}
 export type Response<T> = {
   code: string
   data: T | null
@@ -173,6 +184,8 @@ export type KucoinOrder = {
   cancelExist: boolean
   createdAt: number
   tradeType: TradeType
+  reduceOnly?: boolean
+  dealValue?: string
 }
 export type Paginated<T> = {
   currentPage: number
@@ -214,6 +227,48 @@ export type Ticker = {
   bestBid: string
   bestAskSize: string
   time: number
+}
+
+export type Position = {
+  id: string
+  symbol: string
+  autoDeposit: boolean
+  maintMarginReq: number
+  riskLimit: number
+  realLeverage: number
+  crossMode: boolean
+  delevPercentage: number
+  openingTimestamp: number
+  currentTimestamp: number
+  currentQty: number
+  currentCost: number
+  currentComm: number
+  unrealisedCost: number
+  realisedGrossCost: number
+  realisedCost: number
+  isOpen: boolean
+  markPrice: number
+  markValue: number
+  posCost: number
+  posCross: number
+  posInit: number
+  posComm: number
+  posLoss: number
+  posMargin: number
+  posMaint: number
+  maintMargin: number
+  realisedGrossPnl: number
+  realisedPnl: number
+  unrealisedPnl: number
+  unrealisedPnlPcnt: number
+  unrealisedRoePcnt: number
+  avgEntryPrice: number
+  liquidationPrice: number
+  bankruptPrice: number
+  settleCurrency: number
+  maintainMargin: number
+  userId: number
+  riskLimitLevel: number
 }
 
 export type AllTicker = {
@@ -269,6 +324,8 @@ export enum WSSubjectEnum {
   orderChange = 'orderChange',
   balance = 'account.balance',
   klines = 'trade.candles.update',
+  futuresBalance = 'availableBalance.change',
+  ticker = 'ticker',
 }
 
 export enum WSTypesEnum {
@@ -279,9 +336,40 @@ export enum WSTypesEnum {
 
 export enum WSMessageTopicEnum {
   tickerAll = '/market/ticker:all',
-  orderChange = '/spotMarket/tradeOrders',
+  orderChange = '/spotMarket/tradeOrdersV2',
   balance = '/account/balance',
   klines = '/market/candles:',
+  futuresBalance = '/contractAccount/wallet',
+  futuresTicker = '/contractMarket/ticker:',
+  futuresOrder = '/contractMarket/tradeOrders',
+}
+
+export type FuturesBalanceWsMessageData = {
+  availableBalance: number
+  holdBalance: number
+  currency: string
+  timestamp: number
+}
+
+export type WSFuturesBalanceMessage = {
+  topic: WSMessageTopicEnum.futuresBalance
+  subject: WSSubjectEnum.futuresBalance
+  data: FuturesBalanceWsMessageData
+  type: WSMessageTopicEnum.futuresBalance
+}
+
+export type WSFuturesTickerMessage = {
+  type: WSTypesEnum.message
+  topic: WSMessageTopicEnum.futuresTicker
+  subject: WSSubjectEnum.ticker
+  data: FuturesFullTicker
+}
+
+export type WSFuturesOrderMessage = {
+  type: WSTypesEnum.message
+  topic: WSMessageTopicEnum.futuresOrder
+  subject: WSSubjectEnum.orderChange
+  data: FuturesOrder
 }
 
 export type WSTickerMessage = {
@@ -330,7 +418,7 @@ export type WSUpdateOrder = {
   orderType: OrderType
   side: OrderSide
   orderId: string
-  type: 'open' | 'match' | 'filled' | 'canceled' | 'update'
+  type: 'open' | 'match' | 'filled' | 'canceled' | 'update' | 'received'
   /** time in nanoseconds */
   orderTime: number
   size: string
@@ -339,7 +427,7 @@ export type WSUpdateOrder = {
   price: string
   clientOid: string
   remainSize: string
-  status: 'open' | 'match' | 'done'
+  status: 'open' | 'match' | 'done' | 'new'
   /** time in nanoseconds */
   ts: number
   liquidity: Liquidity
@@ -378,6 +466,9 @@ export type WSMessage =
   | WSOrderChangeMessage
   | WSBalanceMessage
   | WSKlines
+  | WSFuturesBalanceMessage
+  | WSFuturesTickerMessage
+  | WSFuturesOrderMessage
 
 export type WSTicker = {
   bestAsk: string
@@ -416,6 +507,64 @@ export type KucoinSymbol = {
   minFunds: string
   isMarginEnabled: boolean
   enableTrading: boolean
+}
+
+export type FuturesKucoinSymbols = {
+  symbol: string
+  rootSymbol: string
+  type: string
+  firstOpenDate: number
+  expireDate: Date
+  settleDate: Date
+  baseCurrency: string
+  quoteCurrency: string
+  settleCurrency: string
+  maxOrderQty: number
+  maxPrice: number
+  lotSize: number
+  tickSize: number
+  indexPriceTickSize: number
+  multiplier: number
+  initialMargin: number
+  maintainMargin: number
+  maxRiskLimit: number
+  minRiskLimit: number
+  riskStep: number
+  makerFeeRate: number
+  takerFeeRate: number
+  takerFixFee: number
+  makerFixFee: number
+  settlementFee: number
+  isDeleverage: boolean
+  isQuanto: boolean
+  isInverse: boolean
+  markMethod: string
+  fairMethod: string
+  fundingBaseSymbol: string
+  fundingQuoteSymbol: string
+  fundingRateSymbol: string
+  indexSymbol: string
+  settlementSymbol: string
+  status: 'Open' | 'Closed'
+  fundingFeeRate: number
+  predictedFundingFeeRate: number
+  openInterest: string
+  turnoverOf24h: number
+  volumeOf24h: number
+  markPrice: number
+  indexPrice: number
+  lastTradePrice: number
+  nextFundingRateTime: number
+  maxLeverage: number
+  sourceExchanges: string[]
+  premiumsSymbol1M: string
+  premiumsSymbol8H: string
+  fundingBaseSymbol1M: string
+  fundingQuoteSymbol1M: string
+  lowPrice: number
+  highPrice: number
+  priceChgPct: number
+  priceChg: number
 }
 
 export type ConvertedWsTicker = { symbol: string } & WSTicker
@@ -467,6 +616,7 @@ export interface ExecutionReport {
   symbol: string // Symbol
   totalQuoteTradeQuantity: string // Cumulative quote asset transacted quantity
   totalTradeQuantity: string // Cumulative filled quantity
+  uniqueMessageId?: string
 }
 
 export type UserDataStreamEvent =
@@ -512,6 +662,44 @@ export interface FullTicker {
   totalTrades: number
 }
 
+export interface FuturesFullTicker {
+  symbol: string
+  sequence: number
+  side: string
+  price: string
+  size: number
+  tradeId: string
+  bestBidSize: number
+  bestBidPrice: string
+  bestAskPrice: string
+  bestAskSize: number
+  ts: number
+}
+
+export interface FuturesOrder {
+  orderId: string
+  symbol: string
+  type: 'open' | 'match' | 'filled' | 'canceled' | 'update' | 'received'
+  feeType: string
+  matchSize: string
+  matchPrice: string
+  orderType: OrderType
+  side: OrderSide
+  price: string
+  size: string
+  remainSize: string
+  filledSize: string
+  canceledSize: string
+  tradeId: string
+  clientOid: string
+  orderTime: number
+  oldSize: string
+  status: 'open' | 'match' | 'done' | 'new'
+  /** time in nanoseconds */
+  ts: number
+  liquidity: Liquidity
+}
+
 export type Kline = string[][]
 
 const SUCCESS_CODE = '200000'
@@ -527,12 +715,13 @@ class KucoinApi {
   private secret: string
   private passphrase: string
   private url: string
+  private futuresUrl: string
   private sockets: {
     [x in RequestType]: {
       ws: ReconnectingWebSocket | null
       pingInterval: number | null
       pingTimeout: number | null
-      cb: { fn: (msg: WSMessage) => any; topic: string }[]
+      cb: { fn: (msg: WSMessage) => any; topics: string[]; signature: string }[]
       pending: boolean
       callOnConnect: ((...args: []) => any)[]
       timer: NodeJS.Timer | null
@@ -540,6 +729,7 @@ class KucoinApi {
       lastPong: number | null
       checkPong: NodeJS.Timer | null
       topics: Set<string>
+      tunnelId?: string
       onError?: (msg: string) => void
       pingError: number
     }
@@ -555,20 +745,23 @@ class KucoinApi {
       key?: string
       secret?: string
       passphrase?: string
-      environment?: 'live' | 'sandbox'
     },
     private broker?: {
-      id: string
-      secret: string
+      spot: {
+        id: string
+        secret: string
+      }
+      futures: {
+        id: string
+        secret: string
+      }
     },
   ) {
     this.key = params?.key || ''
     this.secret = params?.secret || ''
     this.passphrase = params?.passphrase || ''
     this.url = 'https://api.kucoin.com'
-    if (params?.environment === 'sandbox') {
-      this.url = 'https://openapi-sandbox.kucoin.com'
-    }
+    this.futuresUrl = 'https://api-futures.kucoin.com'
     this.sockets = this.defaultWs()
     this.handleWsMessage = this.handleWsMessage.bind(this)
     this.orderFills = []
@@ -618,6 +811,7 @@ class KucoinApi {
     params: AnyObject,
     method: Methods,
     type: RequestType,
+    futures: boolean,
   ) {
     const headers: { [x: string]: string } = {
       'Content-Type': 'application/json',
@@ -644,10 +838,15 @@ class KucoinApi {
       headers['KC-API-PASSPHRASE'] = passphraseResult
       headers['KC-API-KEY-VERSION'] = '2'
       if (this.broker) {
-        headers['KC-API-PARTNER'] = this.broker.id
+        headers['KC-API-PARTNER'] = futures
+          ? this.broker.futures.id
+          : this.broker.spot.id
         headers['KC-API-PARTNER-SIGN'] = crypto
-          .createHmac('sha256', this.broker.secret)
-          .update(`${nonce}${this.broker.id}${this.key}`)
+          .createHmac(
+            'sha256',
+            futures ? this.broker.futures.secret : this.broker.spot.secret,
+          )
+          .update(`${nonce}${headers['KC-API-PARTNER']}${this.key}`)
           .digest('base64')
       }
     }
@@ -714,6 +913,7 @@ class KucoinApi {
     method: Methods,
     params: AnyObject,
     type: RequestType,
+    futures = false,
     count = 1,
   ): Promise<Result<T>> {
     if (
@@ -727,13 +927,13 @@ class KucoinApi {
         reasonCode: '1',
       }
     }
-    const url = `${this.url}${endpoint}${
+    const url = `${futures ? this.futuresUrl : this.url}${endpoint}${
       method === 'POST' ? '' : this.formatQuery(params)
     }`
     const config = {
       method,
       body: method === 'POST' ? JSON.stringify(params) : undefined,
-      headers: this.sign(endpoint, params, method, type),
+      headers: this.sign(endpoint, params, method, type, !!futures),
     }
     try {
       const result = await fetch(url, config)
@@ -745,12 +945,13 @@ class KucoinApi {
           .indexOf('fetch failed'.toLowerCase()) !== -1 &&
         count < 5
       ) {
-        await sleep(500)
+        await sleep(200)
         return await this.sendRequest<T>(
           endpoint,
           method,
           params,
           type,
+          futures,
           count + 1,
         )
       }
@@ -761,6 +962,19 @@ class KucoinApi {
         reasonCode: (e as any).cause.errno,
       }
     }
+  }
+  /* 
+    Get Account Detail - Futures
+    GET /api/v1/account-overview
+    */
+  public async getFuturesAccounts(params: GetAccountsInput = {}) {
+    return await this.sendRequest<FuturesAccountDetails>(
+      `/api/v1/account-overview`,
+      'GET',
+      params,
+      'private',
+      true,
+    )
   }
   /* 
     List Accounts
@@ -788,6 +1002,22 @@ class KucoinApi {
     )
   }
   /* 
+    Place a new order
+    POST /api/v1/orders
+    Details for market order vs. limit order and params see https://docs.kucoin.com/#place-a-new-order
+    */
+  public async placeFuturesOrder(
+    params: CommonOrderConfig & { leverage: number },
+  ) {
+    return await this.sendRequest<OrderResponse>(
+      '/api/v1/orders',
+      'POST',
+      params,
+      'private',
+      true,
+    )
+  }
+  /*
     Cancel an order
     DELETE /api/v1/orders/<order-id>
     */
@@ -801,14 +1031,27 @@ class KucoinApi {
   }
   /* 
     Get Symbols List
-    GET /api/v1/symbols
+    GET /api/v2/symbols
     */
   public async getSymbols() {
     return await this.sendRequest<KucoinSymbol[]>(
-      '/api/v1/symbols',
+      '/api/v2/symbols',
       'GET',
       {},
       'public',
+    )
+  }
+  /* 
+    Get Futures Symbols List
+    GET /api/v1/contracts/active
+    */
+  public async getFuturesSymbols() {
+    return await this.sendRequest<FuturesKucoinSymbols[]>(
+      '/api/v1/contracts/active',
+      'GET',
+      {},
+      'public',
+      true,
     )
   }
   /* 
@@ -829,6 +1072,23 @@ class KucoinApi {
     )
   }
   /* 
+    List orders
+    GET /api/v1/orders
+    */
+  public async getFuturesOrders(params: {
+    status?: OrderActiveStatus
+    symbol?: string
+    side?: OrderSide
+  }) {
+    return await this.sendRequest<ListOrders>(
+      '/api/v1/orders',
+      'GET',
+      params,
+      'private',
+      true,
+    )
+  }
+  /* 
     Get an order
     GET /api/v1/orders/<order-id>
     */
@@ -838,6 +1098,19 @@ class KucoinApi {
       'GET',
       {},
       'private',
+    )
+  }
+  /* 
+    Get an order
+    GET /api/v1/orders/<order-id>
+    */
+  public async getFuturesOrderById(params: { id: string }) {
+    return await this.sendRequest<KucoinOrder>(
+      `/api/v1/orders/${params.id}`,
+      'GET',
+      {},
+      'private',
+      true,
     )
   }
   /* 
@@ -851,6 +1124,46 @@ class KucoinApi {
       {},
       'private',
     )
+  }
+  /* 
+    Get an order by client ID
+    GET /api/v1/orders/byClientOid
+    */
+  public async getFuturesOrderByClientId(params: { clientOid: string }) {
+    return await this.sendRequest<KucoinOrder>(
+      `/api/v1/orders/byClientOid`,
+      'GET',
+      params,
+      'private',
+      true,
+    )
+  }
+  /* 
+    Cancel an order by client ID
+    DELETE /api/v1/orders/client-order/{clientOid}
+    */
+  public async cancelFuturesOrderByClientId(params: {
+    id: string
+    symbol: string
+  }) {
+    return await this.sendRequest<{
+      clientOid: string
+    }>(
+      `/api/v1/orders/client-order/${params.id}`,
+      'DELETE',
+      { symbol: params.symbol },
+      'private',
+      true,
+    )
+  }
+  /* 
+    Cancel an order by order ID
+    DELETE /api/v1/orders/{orderId}
+    */
+  public async cancelFuturesOrderByOrderId(params: { id: string }) {
+    return await this.sendRequest<{
+      cancelledOrderIds: string[]
+    }>(`/api/v1/orders/${params.id}`, 'DELETE', {}, 'private', true)
   }
   /* 
     Cancel an order by client ID
@@ -887,6 +1200,45 @@ class KucoinApi {
     )
   }
   /*  
+    Get Ticker
+    GET /api/v1/market/orderbook/level1?symbol=<symbol>
+    */
+  public async getFuturesTicker(params: { symbol: string }) {
+    return await this.sendRequest<Ticker>(
+      `/api/v1/ticker`,
+      'GET',
+      params,
+      'public',
+      true,
+    )
+  }
+  /*  
+    Get Positions
+    GET /api/v1/positions
+    */
+  public async getFuturesPositions() {
+    return await this.sendRequest<Position[]>(
+      `/api/v1/positions`,
+      'GET',
+      {},
+      'private',
+      true,
+    )
+  }
+  /*  
+    Get Position by symbol
+    GET /api/v1/positions
+    */
+  public async getFuturesPositionBySymbol(params: { symbol: string }) {
+    return await this.sendRequest<Position>(
+      `/api/v1/position`,
+      'GET',
+      params,
+      'private',
+      true,
+    )
+  }
+  /*  
     Get All Tickers
     GET /api/v1/market/allTickers
     */
@@ -910,6 +1262,7 @@ class KucoinApi {
       'private',
     )
   }
+
   /*  
     Get Base Fee
     GET /api/v1/base-fee
@@ -937,6 +1290,24 @@ class KucoinApi {
       'GET',
       params,
       'public',
+    )
+  }
+  /*  
+    Get Klines
+    GET /api/v1/kline/query
+    */
+  public async getFuturesKlines(params: {
+    symbol: string
+    startAt?: number
+    endAt?: number
+    granularity: number
+  }) {
+    return await this.sendRequest<Kline>(
+      `/api/v1/kline/query`,
+      'GET',
+      params,
+      'public',
+      true,
     )
   }
   public async getWsUrl(type: RequestType) {
@@ -1020,7 +1391,7 @@ class KucoinApi {
             this.sockets[type].cb,
           )*/
           for (const s of this.sockets[type].cb) {
-            this.handleSubscribe(type, s.topic, s.fn)
+            this.handleSubscribe(type, s.topics, s.fn)
             await sleep(2500)
           }
         }
@@ -1057,7 +1428,7 @@ class KucoinApi {
                   this.closeWs(type)
                   await this.getWs(type, undefined, undefined, onError)
                   for (const s of subscribers) {
-                    this.handleSubscribe(type, s.topic, s.fn)
+                    this.handleSubscribe(type, s.topics, s.fn)
                   }
                 }
                 /* this.sockets[type].topics.clear()
@@ -1110,6 +1481,35 @@ class KucoinApi {
       totalTrades: 0,
     }
   }
+  private convertWsFuturesTicker(msg: WSFuturesTickerMessage): FullTicker {
+    const time = Math.floor(msg.data.ts / 1000 / 1000)
+    return {
+      eventType: '24hrMiniTicker',
+      eventTime: time,
+      curDayClose: msg.data.price,
+      open: msg.data.price,
+      high: msg.data.price,
+      low: msg.data.price,
+      volume: `${msg.data.size}`,
+      volumeQuote: `${msg.data.size}`,
+      symbol: msg.topic.split(':')[1],
+
+      priceChange: '',
+      priceChangePercent: '',
+      weightedAvg: '',
+      prevDayClose: '',
+      closeTradeQuantity: '',
+      bestBid: msg.data.bestBidPrice,
+      bestAsk: msg.data.bestAskPrice,
+      bestAskQnt: `${msg.data.bestAskSize}`,
+      bestBidQnt: `${msg.data.bestBidSize}`,
+      openTime: time,
+      closeTime: time,
+      firstTradeId: 0,
+      lastTradeId: 0,
+      totalTrades: 0,
+    }
+  }
   private handleWsMessage(msg: WSMessage) {
     if (msg.type === WSTypesEnum.welcome) {
       this.handleLog(`Welcome WS Kucoin ${msg.id}`)
@@ -1135,6 +1535,10 @@ class KucoinApi {
           ws.onmessage = (msg) => {
             for (const cb of this.sockets[type].cb) {
               const json = JSON.parse(msg.data) as WSMessage
+              //@ts-ignore
+              /* if (json.topic !== '/market/ticker:all') {
+                console.log(json)
+              } */
               cb.fn(json)
             }
           }
@@ -1143,7 +1547,13 @@ class KucoinApi {
             ws,
             pingInterval: 0,
             pingTimeout: 0,
-            cb: [{ fn: this.handleWsMessage, topic: HANDLE_MESSAGE }],
+            cb: [
+              {
+                fn: this.handleWsMessage,
+                topics: [HANDLE_MESSAGE],
+                signature: HANDLE_MESSAGE,
+              },
+            ],
             pending: false,
             onError,
           }
@@ -1178,69 +1588,108 @@ class KucoinApi {
     this.sockets[type] = this.defaultWs()[type]
   }
   @IdMute(mutex, () => 'unsubscribe')
-  private async handleUnsubscribe(type: RequestType, topic: string) {
+  private async handleUnsubscribe(
+    type: RequestType,
+    _topics: string | string[],
+  ) {
+    const topics = Array.isArray(_topics) ? _topics : [_topics]
+    const signature = topics.join(',')
     this.sockets[type].cb = this.sockets[type].cb.filter(
-      (c) => c.topic !== topic,
+      (c) => c.signature !== signature,
     )
-    if (this.sockets[type].ws) {
-      const id = +new Date() * Math.random()
-      this.sockets[type].ws?.send(
-        JSON.stringify({
-          id: `${type}@${topic}@${id}`,
-          type: 'unsubscribe',
-          topic,
-          response: true,
-        }),
-      )
-      this.sockets[type].topics.delete(topic)
+    for (const topic of topics) {
+      if (this.sockets[type].ws) {
+        const id = +new Date() * Math.random()
+        this.sockets[type].ws?.send(
+          JSON.stringify({
+            id: `${type}@${topic}@${id}`,
+            type: 'unsubscribe',
+            topic,
+            response: true,
+          }),
+        )
+        this.sockets[type].topics.delete(topic)
+      }
     }
     if (
       ((this.sockets[type].cb.length === 1 &&
-        this.sockets[type].cb[0].topic === HANDLE_MESSAGE) ||
+        this.sockets[type].cb[0]?.topics?.[0] === HANDLE_MESSAGE) ||
         this.sockets[type].cb.length === 0) &&
       this.sockets[type].ws
     ) {
       this.closeWs(type)
     }
   }
+  @IdMute(
+    mutex,
+    (_type: unknown, topics: string[]) => `subscribeTopics${topics.join(',')}`,
+  )
+  private async subscribeTopics(type: RequestType, topics: string[]) {
+    for (const topic of topics) {
+      const id = +new Date() * Math.random()
+      this.sockets[type].ws?.send(
+        JSON.stringify({
+          id: `${type}@${topic}@${id}`,
+          type: 'subscribe',
+          topic,
+          privateChannel: type === 'private',
+          response: true,
+        }),
+      )
+      await sleep(200)
+    }
+  }
   @IdMute(mutex, () => 'subscribe')
   private async handleSubscribe(
     type: RequestType,
-    topic: string,
+    _topics: string | string[],
     cbToSet: (msg: WSMessage) => any,
+    count = 0,
   ) {
+    if (`${_topics}` === HANDLE_MESSAGE) {
+      return
+    }
+    let topics = Array.isArray(_topics) ? _topics : [_topics]
     if (this.sockets[type]) {
-      if (this.sockets[type].ws) {
-        if (this.sockets[type].topics.size === 300) {
+      const open =
+        this.sockets[type].ws?.readyState === this.sockets[type].ws?.OPEN
+
+      if (this.sockets[type].ws && open) {
+        /* if (this.sockets[type].topics.size === 300) {
           this.handleLog('Cannot connect more than 300')
           return
-        }
-        if (this.sockets[type].topics.has(topic)) {
+        } */
+        topics = topics.filter((topic) => !this.sockets[type].topics.has(topic))
+        /* if (this.sockets[type].topics.has(topic)) {
           this.handleLog(`Connection already exist ${topic}`)
           return
+        } */
+        if (!topics.length) {
+          return
         }
-        const id = +new Date() * Math.random()
-        this.sockets[type].ws?.send(
-          JSON.stringify({
-            id: `${type}@${topic}@${id}`,
-            type: 'subscribe',
-            topic,
-            privateChannel: type === 'private',
-            response: true,
-          }),
-        )
-        this.sockets[type].topics.add(topic)
-        if (!this.sockets[type].cb.find((c) => c.topic === topic)) {
-          this.sockets[type].cb.push({ fn: cbToSet, topic })
+        topics.forEach((t) => this.sockets[type].topics.add(t))
+        const signature = topics.join(',')
+        if (!this.sockets[type].cb.find((c) => c.signature === signature)) {
+          this.sockets[type].cb.push({ fn: cbToSet, topics, signature })
         }
-      } else if (!this.sockets[type].ws && this.sockets[type].pending) {
+        this.subscribeTopics(type, topics)
+      } else if (
+        (!this.sockets[type].ws && this.sockets[type].pending) ||
+        (this.sockets[type].ws && !open)
+      ) {
         this.sockets[type].callOnConnect.push(() =>
-          this.handleSubscribe(type, topic, cbToSet),
+          this.handleSubscribe(type, _topics, cbToSet),
         )
+        if (count < 5) {
+          setTimeout(
+            () => this.handleSubscribe(type, _topics, cbToSet, count + 1),
+            2000,
+          )
+        }
       }
     }
   }
-  private convertOrderUpdate(msg: WSUpdateOrder): ExecutionReport {
+  private convertOrderUpdate(msg: WSUpdateOrder): ExecutionReport | undefined {
     let find = this.orderFills.find((o) => o.orderId === msg.orderId)
     if (!find) {
       find = { orderId: msg.orderId, fills: [] }
@@ -1254,14 +1703,14 @@ class KucoinApi {
         })
       }
     }
-    const totalTradeQuantity = find.fills.reduce(
-      (acc, v) => acc + parseFloat(v.qty),
-      0,
-    )
-    const totalQuoteTradeQuantity = find.fills.reduce(
-      (acc, v) => acc + parseFloat(v.price) * parseFloat(v.qty),
-      0,
-    )
+    const totalTradeQuantity =
+      find.fills.reduce((acc, v) => acc + parseFloat(v.qty), 0) ||
+      (msg.filledSize ? +msg.filledSize : 0)
+    const totalQuoteTradeQuantity =
+      find.fills.reduce(
+        (acc, v) => acc + parseFloat(v.price) * parseFloat(v.qty),
+        0,
+      ) || (msg.filledSize ? +msg.filledSize * +msg.price : 0)
     const convertTime = (ts: number) => Math.round(ts / 1000000)
     if (msg.status === 'done') {
       this.orderFills = this.orderFills.filter((f) => f.orderId !== msg.orderId)
@@ -1271,8 +1720,20 @@ class KucoinApi {
         find,
       ]
     }
+    const openStatuses = ['open', 'new']
+    const openTypes = ['open', 'received']
+    let price =
+      msg.price ||
+      `${
+        totalTradeQuantity !== 0
+          ? totalQuoteTradeQuantity / totalTradeQuantity
+          : 0
+      }`
+    if (isNaN(+price)) {
+      price = '0'
+    }
     return {
-      creationTime: convertTime(msg.orderTime),
+      creationTime: msg.orderTime,
       eventTime: convertTime(msg.ts),
       eventType: 'executionReport',
       newClientOrderId: msg.clientOid,
@@ -1281,35 +1742,34 @@ class KucoinApi {
       orderStatus:
         (msg.type === 'canceled' &&
           msg.status === 'done' &&
-          msg.filledSize !== '0') ||
+          `${msg.filledSize}` !== '0') ||
         (msg.type === 'filled' && msg.status === 'done') ||
+        (msg.type === 'match' && msg.status === 'done') ||
         (msg.type === 'match' &&
           msg.status === 'match' &&
-          msg.remainSize === '0')
+          `${msg.remainSize}` === '0')
           ? 'FILLED'
           : (msg.type === 'match' && msg.status === 'match') ||
             (msg.type === 'match' && msg.status === 'open') ||
-            (msg.type === 'open' &&
-              msg.status === 'open' &&
-              msg.filledSize !== '0')
+            (openTypes.includes(msg.type) &&
+              openStatuses.includes(msg.status) &&
+              msg.filledSize &&
+              `${msg.filledSize}` !== '0')
           ? 'PARTIALLY_FILLED'
-          : msg.type === 'open' && msg.status === 'open'
+          : openTypes.includes(msg.type) && openStatuses.includes(msg.status)
           ? 'NEW'
           : 'CANCELED',
       orderType: msg.orderType === 'limit' ? 'LIMIT' : 'MARKET',
       originalClientOrderId: msg.clientOid,
-      price:
-        msg.price ||
-        `${
-          totalTradeQuantity !== 0
-            ? totalQuoteTradeQuantity / totalTradeQuantity
-            : 0
-        }`,
+      price,
       quantity: msg.size || msg.filledSize || '0',
       side: msg.side === 'buy' ? 'BUY' : 'SELL',
       symbol: msg.symbol,
       totalQuoteTradeQuantity: `${totalQuoteTradeQuantity}`,
       totalTradeQuantity: `${totalTradeQuantity}`,
+      uniqueMessageId: Object.entries(msg)
+        .map(([k, v]) => `${k}:${v}`)
+        .join(','),
     }
   }
   private convertBalanceUpdate(msg: WSBalance): OutboundAccountPosition {
@@ -1319,6 +1779,22 @@ class KucoinApi {
       lastAccountUpdate: 0,
       balances: [
         { asset: msg.currency, free: msg.available, locked: msg.hold },
+      ],
+    }
+  }
+  private convertFuturesBalanceUpdate(
+    msg: WSFuturesBalanceMessage,
+  ): OutboundAccountPosition {
+    return {
+      eventTime: msg.data.timestamp,
+      eventType: 'outboundAccountPosition',
+      lastAccountUpdate: 0,
+      balances: [
+        {
+          asset: msg.data.currency,
+          free: `${msg.data.availableBalance}`,
+          locked: `${msg.data.holdBalance}`,
+        },
       ],
     }
   }
@@ -1361,6 +1837,28 @@ class KucoinApi {
         this.handleSubscribe('public', topic, thisCb)
         return () => this.handleUnsubscribe('public', topic)
       },
+      futuresTicker: async (
+        symbols: string[],
+        callback: (msg: FullTicker) => void | Promise<void>,
+        onError?: (msg: string) => void,
+      ) => {
+        const thisCb = (msg: WSMessage) => {
+          if (
+            (msg as WSFuturesTickerMessage).subject === WSSubjectEnum.ticker &&
+            (msg as WSFuturesTickerMessage).topic.startsWith(
+              WSMessageTopicEnum.futuresTicker,
+            )
+          ) {
+            callback(this.convertWsFuturesTicker(msg as WSFuturesTickerMessage))
+          }
+        }
+        const topics = symbols.map(
+          (symbol) => `/contractMarket/ticker:${symbol}`,
+        )
+        await this.getWs('public', undefined, token, onError)
+        this.handleSubscribe('public', topics, thisCb)
+        return () => this.handleUnsubscribe('public', topics)
+      },
       order: async (
         callback: (msg: ExecutionReport) => void | Promise<void>,
         onError?: (msg: string) => void,
@@ -1371,10 +1869,37 @@ class KucoinApi {
             msg.topic === WSMessageTopicEnum.orderChange &&
             msg.subject === WSSubjectEnum.orderChange
           ) {
-            callback(this.convertOrderUpdate(msg.data))
+            const o = this.convertOrderUpdate(msg.data)
+            if (o) {
+              callback(o)
+            }
           }
         }
-        const topic = `/spotMarket/tradeOrders`
+        const topic = `/spotMarket/tradeOrdersV2`
+        await this.getWs('private', undefined, token, onError)
+
+        this.handleSubscribe('private', topic, thisCb)
+        return () => this.handleUnsubscribe('private', topic)
+      },
+      futuresOrder: async (
+        callback: (msg: ExecutionReport) => void | Promise<void>,
+        onError?: (msg: string) => void,
+      ) => {
+        const thisCb = (msg: WSMessage) => {
+          if (
+            (msg as WSFuturesOrderMessage).topic ===
+              WSMessageTopicEnum.futuresOrder &&
+            (msg as WSFuturesOrderMessage).subject === WSSubjectEnum.orderChange
+          ) {
+            const o = this.convertOrderUpdate(
+              (msg as WSFuturesOrderMessage).data,
+            )
+            if (o) {
+              callback(o)
+            }
+          }
+        }
+        const topic = `/contractMarket/tradeOrders`
         await this.getWs('private', undefined, token, onError)
 
         this.handleSubscribe('private', topic, thisCb)
@@ -1395,6 +1920,27 @@ class KucoinApi {
           }
         }
         const topic = `/account/balance`
+        await this.getWs('private', undefined, token, onError)
+        this.handleSubscribe('private', topic, thisCb)
+        return () => this.handleUnsubscribe('private', topic)
+      },
+      futuresBalance: async (
+        callback: (msg: OutboundAccountPosition) => void | Promise<void>,
+        onError?: (msg: string) => void,
+      ) => {
+        const thisCb = (msg: WSMessage) => {
+          if (
+            (msg as WSFuturesBalanceMessage).topic ===
+              WSMessageTopicEnum.futuresBalance &&
+            (msg as WSFuturesBalanceMessage).subject ===
+              WSSubjectEnum.futuresBalance
+          ) {
+            callback(
+              this.convertFuturesBalanceUpdate(msg as WSFuturesBalanceMessage),
+            )
+          }
+        }
+        const topic = `/contractAccount/wallet`
         await this.getWs('private', undefined, token, onError)
         this.handleSubscribe('private', topic, thisCb)
         return () => this.handleUnsubscribe('private', topic)
