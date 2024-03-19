@@ -185,6 +185,7 @@ export type KucoinOrder = {
   createdAt: number
   tradeType: TradeType
   reduceOnly?: boolean
+  dealValue?: string
 }
 export type Paginated<T> = {
   currentPage: number
@@ -228,16 +229,14 @@ export type Ticker = {
   time: number
 }
 
-export type BooleanString = 'False' | 'True'
-
 export type Position = {
   id: string
   symbol: string
-  autoDeposit: BooleanString
+  autoDeposit: boolean
   maintMarginReq: number
   riskLimit: number
   realLeverage: number
-  crossMode: BooleanString
+  crossMode: boolean
   delevPercentage: number
   openingTimestamp: number
   currentTimestamp: number
@@ -247,7 +246,7 @@ export type Position = {
   unrealisedCost: number
   realisedGrossCost: number
   realisedCost: number
-  isOpen: BooleanString
+  isOpen: boolean
   markPrice: number
   markValue: number
   posCost: number
@@ -1156,6 +1155,15 @@ class KucoinApi {
       'private',
       true,
     )
+  }
+  /* 
+    Cancel an order by order ID
+    DELETE /api/v1/orders/{orderId}
+    */
+  public async cancelFuturesOrderByOrderId(params: { id: string }) {
+    return await this.sendRequest<{
+      cancelledOrderIds: string[]
+    }>(`/api/v1/orders/${params.id}`, 'DELETE', {}, 'private', true)
   }
   /* 
     Cancel an order by client ID
