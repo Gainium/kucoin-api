@@ -1689,7 +1689,7 @@ class KucoinApi {
       }
     }
   }
-  private convertOrderUpdate(msg: WSUpdateOrder): ExecutionReport {
+  private convertOrderUpdate(msg: WSUpdateOrder): ExecutionReport | undefined {
     let find = this.orderFills.find((o) => o.orderId === msg.orderId)
     if (!find) {
       find = { orderId: msg.orderId, fills: [] }
@@ -1703,14 +1703,14 @@ class KucoinApi {
         })
       }
     }
-    const totalTradeQuantity = find.fills.reduce(
-      (acc, v) => acc + parseFloat(v.qty),
-      0,
-    )
-    const totalQuoteTradeQuantity = find.fills.reduce(
-      (acc, v) => acc + parseFloat(v.price) * parseFloat(v.qty),
-      0,
-    )
+    const totalTradeQuantity =
+      find.fills.reduce((acc, v) => acc + parseFloat(v.qty), 0) ||
+      (msg.filledSize ? +msg.filledSize : 0)
+    const totalQuoteTradeQuantity =
+      find.fills.reduce(
+        (acc, v) => acc + parseFloat(v.price) * parseFloat(v.qty),
+        0,
+      ) || (msg.filledSize ? +msg.filledSize * +msg.price : 0)
     const convertTime = (ts: number) => Math.round(ts / 1000000)
     if (msg.status === 'done') {
       this.orderFills = this.orderFills.filter((f) => f.orderId !== msg.orderId)
@@ -1722,8 +1722,18 @@ class KucoinApi {
     }
     const openStatuses = ['open', 'new']
     const openTypes = ['open', 'received']
+    let price =
+      msg.price ||
+      `${
+        totalTradeQuantity !== 0
+          ? totalQuoteTradeQuantity / totalTradeQuantity
+          : 0
+      }`
+    if (isNaN(+price)) {
+      price = '0'
+    }
     return {
-      creationTime: convertTime(msg.orderTime),
+      creationTime: msg.orderTime,
       eventTime: convertTime(msg.ts),
       eventType: 'executionReport',
       newClientOrderId: msg.clientOid,
@@ -1732,31 +1742,26 @@ class KucoinApi {
       orderStatus:
         (msg.type === 'canceled' &&
           msg.status === 'done' &&
-          msg.filledSize !== '0') ||
+          `${msg.filledSize}` !== '0') ||
         (msg.type === 'filled' && msg.status === 'done') ||
         (msg.type === 'match' && msg.status === 'done') ||
         (msg.type === 'match' &&
           msg.status === 'match' &&
-          msg.remainSize === '0')
+          `${msg.remainSize}` === '0')
           ? 'FILLED'
           : (msg.type === 'match' && msg.status === 'match') ||
             (msg.type === 'match' && msg.status === 'open') ||
             (openTypes.includes(msg.type) &&
               openStatuses.includes(msg.status) &&
-              msg.filledSize !== '0')
+              msg.filledSize &&
+              `${msg.filledSize}` !== '0')
           ? 'PARTIALLY_FILLED'
           : openTypes.includes(msg.type) && openStatuses.includes(msg.status)
           ? 'NEW'
           : 'CANCELED',
       orderType: msg.orderType === 'limit' ? 'LIMIT' : 'MARKET',
       originalClientOrderId: msg.clientOid,
-      price:
-        msg.price ||
-        `${
-          totalTradeQuantity !== 0
-            ? totalQuoteTradeQuantity / totalTradeQuantity
-            : 0
-        }`,
+      price,
       quantity: msg.size || msg.filledSize || '0',
       side: msg.side === 'buy' ? 'BUY' : 'SELL',
       symbol: msg.symbol,
@@ -1864,7 +1869,10 @@ class KucoinApi {
             msg.topic === WSMessageTopicEnum.orderChange &&
             msg.subject === WSSubjectEnum.orderChange
           ) {
-            callback(this.convertOrderUpdate(msg.data))
+            const o = this.convertOrderUpdate(msg.data)
+            if (o) {
+              callback(o)
+            }
           }
         }
         const topic = `/spotMarket/tradeOrdersV2`
@@ -1883,9 +1891,12 @@ class KucoinApi {
               WSMessageTopicEnum.futuresOrder &&
             (msg as WSFuturesOrderMessage).subject === WSSubjectEnum.orderChange
           ) {
-            callback(
-              this.convertOrderUpdate((msg as WSFuturesOrderMessage).data),
+            const o = this.convertOrderUpdate(
+              (msg as WSFuturesOrderMessage).data,
             )
+            if (o) {
+              callback(o)
+            }
           }
         }
         const topic = `/contractMarket/tradeOrders`
