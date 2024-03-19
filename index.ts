@@ -931,7 +931,6 @@ class KucoinApi {
     const url = `${futures ? this.futuresUrl : this.url}${endpoint}${
       method === 'POST' ? '' : this.formatQuery(params)
     }`
-    console.log(url)
     const config = {
       method,
       body: method === 'POST' ? JSON.stringify(params) : undefined,
@@ -947,7 +946,7 @@ class KucoinApi {
           .indexOf('fetch failed'.toLowerCase()) !== -1 &&
         count < 5
       ) {
-        await sleep(500)
+        await sleep(200)
         return await this.sendRequest<T>(
           endpoint,
           method,
@@ -1530,7 +1529,7 @@ class KucoinApi {
               const json = JSON.parse(msg.data) as WSMessage
               //@ts-ignore
               /* if (json.topic !== '/market/ticker:all') {
-                console.log(json, cb.topics, cb.signature, cb)
+                console.log(json)
               } */
               cb.fn(json)
             }
@@ -1629,7 +1628,7 @@ class KucoinApi {
           response: true,
         }),
       )
-      await sleep(2500)
+      await sleep(200)
     }
   }
   @IdMute(mutex, () => 'subscribe')
@@ -1637,13 +1636,17 @@ class KucoinApi {
     type: RequestType,
     _topics: string | string[],
     cbToSet: (msg: WSMessage) => any,
+    count = 0,
   ) {
     if (`${_topics}` === HANDLE_MESSAGE) {
       return
     }
     let topics = Array.isArray(_topics) ? _topics : [_topics]
     if (this.sockets[type]) {
-      if (this.sockets[type].ws) {
+      const open =
+        this.sockets[type].ws?.readyState === this.sockets[type].ws?.OPEN
+
+      if (this.sockets[type].ws && open) {
         /* if (this.sockets[type].topics.size === 300) {
           this.handleLog('Cannot connect more than 300')
           return
@@ -1662,10 +1665,19 @@ class KucoinApi {
           this.sockets[type].cb.push({ fn: cbToSet, topics, signature })
         }
         this.subscribeTopics(type, topics)
-      } else if (!this.sockets[type].ws && this.sockets[type].pending) {
+      } else if (
+        (!this.sockets[type].ws && this.sockets[type].pending) ||
+        (this.sockets[type].ws && !open)
+      ) {
         this.sockets[type].callOnConnect.push(() =>
-          this.handleSubscribe(type, topics, cbToSet),
+          this.handleSubscribe(type, _topics, cbToSet),
         )
+        if (count < 5) {
+          setTimeout(
+            () => this.handleSubscribe(type, _topics, cbToSet, count + 1),
+            2000,
+          )
+        }
       }
     }
   }
