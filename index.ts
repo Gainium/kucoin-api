@@ -1340,7 +1340,7 @@ class KucoinApi {
       connectionTimeout: 4e3,
       debug: false,
       maxReconnectionDelay: 10e3,
-      maxRetries: 3,
+      maxRetries: 10,
       minReconnectionDelay: 4e3,
     })
 
