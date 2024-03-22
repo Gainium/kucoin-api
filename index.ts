@@ -1967,6 +1967,11 @@ class KucoinApi {
         this.handleSubscribe('public', topic, thisCb)
         return () => this.handleUnsubscribe('public', topic)
       },
+      ws: () => {
+        return {
+          public: this.sockets['public'],
+        }
+      },
     }
   }
 }
