@@ -326,6 +326,7 @@ export enum WSSubjectEnum {
   klines = 'trade.candles.update',
   futuresBalance = 'availableBalance.change',
   ticker = 'ticker',
+  position = 'position.change',
 }
 
 export enum WSTypesEnum {
@@ -342,6 +343,7 @@ export enum WSMessageTopicEnum {
   futuresBalance = '/contractAccount/wallet',
   futuresTicker = '/contractMarket/ticker:',
   futuresOrder = '/contractMarket/tradeOrders',
+  futuresPosition = '/contract/position:',
 }
 
 export type FuturesBalanceWsMessageData = {
@@ -363,6 +365,52 @@ export type WSFuturesTickerMessage = {
   topic: WSMessageTopicEnum.futuresTicker
   subject: WSSubjectEnum.ticker
   data: FuturesFullTicker
+}
+
+export type FuturesPosition = {
+  realisedGrossPnl: number
+  symbol: string
+  crossMode: boolean
+  liquidationPrice: number
+  posLoss: number
+  avgEntryPrice: number
+  unrealisedPnl: number
+  markPrice: number
+  posMargin: number
+  autoDeposit: boolean
+  riskLimit: number
+  unrealisedCost: number
+  posComm: number
+  posMaint: number
+  posCost: number
+  maintMarginReq: number
+  bankruptPrice: number
+  realisedCost: number
+  markValue: number
+  posInit: number
+  realisedPnl: number
+  maintMargin: number
+  realLeverage: number
+  changeReason: 'liquidation' //changeReason:marginChange、positionChange、liquidation、autoAppendMarginStatusChange、adl
+  currentCost: number
+  openingTimestamp: number
+  currentQty: number
+  delevPercentage: number
+  currentComm: number
+  realisedGrossCost: number
+  isOpen: boolean
+  posCross: number
+  currentTimestamp: number
+  unrealisedRoePcnt: number
+  unrealisedPnlPcnt: number
+  settleCurrency: string
+}
+
+export type WSFuturesPositionMessage = {
+  type: WSTypesEnum.message
+  topic: WSMessageTopicEnum.futuresPosition
+  subject: WSSubjectEnum.position
+  data: FuturesPosition
 }
 
 export type WSFuturesOrderMessage = {
@@ -469,6 +517,7 @@ export type WSMessage =
   | WSFuturesBalanceMessage
   | WSFuturesTickerMessage
   | WSFuturesOrderMessage
+  | WSFuturesPositionMessage
 
 export type WSTicker = {
   bestAsk: string
@@ -1858,6 +1907,29 @@ class KucoinApi {
         await this.getWs('public', undefined, token, onError)
         this.handleSubscribe('public', topics, thisCb)
         return () => this.handleUnsubscribe('public', topics)
+      },
+      futuresPositions: async (
+        symbols: string[],
+        callback: (msg: FuturesPosition) => void | Promise<void>,
+        onError?: (msg: string) => void,
+      ) => {
+        const thisCb = (msg: WSMessage) => {
+          if (
+            (msg as WSFuturesPositionMessage).subject ===
+              WSSubjectEnum.position &&
+            (msg as WSFuturesPositionMessage).topic.startsWith(
+              WSMessageTopicEnum.futuresPosition,
+            ) &&
+            (msg as WSFuturesPositionMessage).data.changeReason ===
+              'liquidation'
+          ) {
+            callback((msg as WSFuturesPositionMessage).data)
+          }
+        }
+        const topics = symbols.map((symbol) => `/contract/position:${symbol}`)
+        await this.getWs('private', undefined, token, onError)
+        this.handleSubscribe('private', topics, thisCb)
+        return () => this.handleUnsubscribe('private', topics)
       },
       order: async (
         callback: (msg: ExecutionReport) => void | Promise<void>,
