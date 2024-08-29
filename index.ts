@@ -119,6 +119,7 @@ export type CommonOrderConfig = {
   tradeType?: TradeType
   /** Tags */
   tags?: string
+  reduceOnly?: boolean
 } & (MarketOrderConfig | LimitOrderConfig)
 
 export type OrderResponse = {
