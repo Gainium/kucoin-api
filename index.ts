@@ -760,6 +760,26 @@ const HANDLE_MESSAGE = 'handleMessage'
   return new Promise((resolve) => setTimeout(resolve, milliseconds))
 }*/
 
+type APIKeyResponse = {
+  remark: string
+  apiKey: string
+  apiVersion: number
+  permission: string
+  createdAt: number
+  uid: number
+  isMaster: boolean
+}
+
+type AffiliateUserRebateInformation = {
+  m1Uid: string
+  rcode: string
+  m2Uid: string
+  amount: string
+  rebate: string
+  cashBack: string
+  offset: string
+}
+
 class KucoinApi {
   private key: string
   private secret: string
@@ -1076,6 +1096,33 @@ class KucoinApi {
       `/api/v1/orders/${params.id}`,
       'DELETE',
       {},
+      'private',
+    )
+  }
+  /*
+    Get api key
+    GET /api/v1/user/api-key
+    */
+  public async getApiKey() {
+    return await this.sendRequest<APIKeyResponse>(
+      `/api/v1/user/api-key`,
+      'GET',
+      {},
+      'private',
+    )
+  }
+  /*
+    Get Affiliate User Rebate Information
+    GET /api/v2/affiliate/inviter/statisticsv
+    */
+  public async getAffiliateUserRebateInformation(params: {
+    date: number
+    offset: number
+  }) {
+    return await this.sendRequest<AffiliateUserRebateInformation[]>(
+      `/api/v2/affiliate/inviter/statistics`,
+      'GET',
+      params,
       'private',
     )
   }
