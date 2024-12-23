@@ -1116,8 +1116,8 @@ class KucoinApi {
     GET /api/v2/affiliate/inviter/statisticsv
     */
   public async getAffiliateUserRebateInformation(params: {
-    date: number
-    offset: number
+    date: string
+    offset?: number
   }) {
     return await this.sendRequest<AffiliateUserRebateInformation[]>(
       `/api/v2/affiliate/inviter/statistics`,
