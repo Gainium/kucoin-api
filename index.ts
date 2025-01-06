@@ -1800,16 +1800,18 @@ class KucoinApi {
         })
       }
     }
-    const totalTradeQuantity = msg.filledSize
-      ? +msg.filledSize
-      : find.fills.reduce((acc, v) => acc + parseFloat(v.qty), 0) ||
-        (msg.filledSize ? +msg.filledSize : 0)
-    const totalQuoteTradeQuantity = msg.filledSize
-      ? +msg.filledSize * +msg.price
-      : find.fills.reduce(
-          (acc, v) => acc + parseFloat(v.price) * parseFloat(v.qty),
-          0,
-        ) || (msg.filledSize ? +msg.filledSize * +msg.price : 0)
+    const totalTradeQuantity =
+      msg.filledSize && +msg.price && msg.orderType === 'limit'
+        ? +msg.filledSize
+        : find.fills.reduce((acc, v) => acc + parseFloat(v.qty), 0) ||
+          (msg.filledSize ? +msg.filledSize : 0)
+    const totalQuoteTradeQuantity =
+      msg.filledSize && +msg.price && msg.orderType === 'limit'
+        ? +msg.filledSize * +msg.price
+        : find.fills.reduce(
+            (acc, v) => acc + parseFloat(v.price) * parseFloat(v.qty),
+            0,
+          ) || (msg.filledSize ? +msg.filledSize * +msg.price : 0)
     const convertTime = (ts: number) => Math.round(ts / 1000000)
     if (msg.status === 'done') {
       this.orderFills = this.orderFills.filter((f) => f.orderId !== msg.orderId)
