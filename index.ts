@@ -615,6 +615,7 @@ export type FuturesKucoinSymbols = {
   highPrice: number
   priceChgPct: number
   priceChg: number
+  supportCross?: boolean
 }
 
 export type ConvertedWsTicker = { symbol: string } & WSTicker
