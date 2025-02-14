@@ -1611,9 +1611,18 @@ class KucoinApi {
   private handleWsMessage(msg: WSMessage) {
     if (msg.type === WSTypesEnum.welcome) {
       this.handleLog(`Welcome WS Kucoin ${msg.id}`)
-    }
-    if (msg.type === WSTypesEnum.ack) {
+    } else if (msg.type === WSTypesEnum.ack) {
       this.handleLog(`Ack WS Kucoin ${msg.id}`)
+    } else if (msg.type !== WSTypesEnum.message) {
+      let m = ''
+      let error = ''
+      try {
+        m = JSON.stringify(msg)
+      } catch (e) {
+        m = `${msg}`
+        error = `${e}`
+      }
+      this.handleLog(`Unknown WS Kucoin ${m}${error ? ` | e: ${error}` : ''}`)
     }
   }
   private async getWs(
