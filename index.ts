@@ -795,10 +795,10 @@ class KucoinApi {
       cb: { fn: (msg: WSMessage) => any; topics: string[]; signature: string }[]
       pending: boolean
       callOnConnect: ((...args: []) => any)[]
-      timer: NodeJS.Timer | null
+      timer: NodeJS.Timeout | null
       lastPing: number | null
       lastPong: number | null
-      checkPong: NodeJS.Timer | null
+      checkPong: NodeJS.Timeout | null
       topics: Set<string>
       tunnelId?: string
       onError?: (msg: string) => void
