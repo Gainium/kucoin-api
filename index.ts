@@ -1497,6 +1497,7 @@ class KucoinApi {
           this.sockets[type].timer = setInterval(() => {
             if (!this.sockets[type].ws?.OPEN) {
               if (this.sockets[type].timer) {
+                //@ts-ignore
                 clearInterval(this.sockets[type].timer)
               }
             }
