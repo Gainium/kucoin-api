@@ -1476,11 +1476,11 @@ class KucoinApi {
         this.sockets[type].lastPong = 0
         if (this.sockets[type].timer) {
           //@ts-ignore
-          clearInterval(this.sockets[type].timer)
+          clearInterval(this.sockets[type].timer as NodeJS.Timeout)
         }
         if (this.sockets[type].checkPong) {
           //@ts-ignore
-          clearInterval(this.sockets[type].checkPong)
+          clearInterval(this.sockets[type].checkPong as NodeJS.Timeout)
         }
         if (this.sockets[type].cb.length > 0) {
           /*console.log(
@@ -1497,7 +1497,7 @@ class KucoinApi {
           this.sockets[type].timer = setInterval(() => {
             if (!this.sockets[type].ws?.OPEN) {
               if (this.sockets[type].timer) {
-                clearInterval(this.sockets[type].timer as NodeJS.Timer)
+                clearInterval(this.sockets[type].timer as NodeJS.Timeout)
               }
             }
             //@ts-ignore
@@ -1506,7 +1506,7 @@ class KucoinApi {
             this.sockets[type].checkPong = setTimeout(async () => {
               if (!this.sockets[type].ws?.OPEN) {
                 if (this.sockets[type].checkPong) {
-                  clearInterval(this.sockets[type].checkPong as NodeJS.Timer)
+                  clearInterval(this.sockets[type].checkPong as NodeJS.Timeout)
                 }
               }
               const diff =
@@ -1686,10 +1686,10 @@ class KucoinApi {
   private closeWs(type: RequestType) {
     this.sockets[type].ws?.close(1000, 'Close by demand')
     if (this.sockets[type].timer) {
-      clearInterval(this.sockets[type].timer as NodeJS.Timer)
+      clearInterval(this.sockets[type].timer as NodeJS.Timeout)
     }
     if (this.sockets[type].checkPong) {
-      clearInterval(this.sockets[type].checkPong as NodeJS.Timer)
+      clearInterval(this.sockets[type].checkPong as NodeJS.Timeout)
     }
     this.sockets[type].topics.clear()
     this.sockets[type] = this.defaultWs()[type]
