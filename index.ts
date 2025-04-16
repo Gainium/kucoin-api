@@ -1078,7 +1078,10 @@ class KucoinApi {
     Details for market order vs. limit order and params see https://docs.kucoin.com/#place-a-new-order
     */
   public async placeFuturesOrder(
-    params: CommonOrderConfig & { leverage: number },
+    params: CommonOrderConfig & {
+      leverage: number
+      marginMode: 'ISOLATED' | 'CROSS'
+    },
   ) {
     return await this.sendRequest<OrderResponse>(
       '/api/v1/orders',
