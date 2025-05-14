@@ -1,9 +1,23 @@
 {
-  "name": "kucoin-api",
+  "name": "@gainium/kucoin-api",
   "version": "1.0.0",
-  "description": "Kucoin API for Gainium",
+  "description": "TypeScript client for the Kucoin cryptocurrency exchange API",
   "main": "index.ts",
-  "author": "Maksym Shamko <max.shamko25@gmail.com>",
+  "author": {
+    "name": "Maksym Shamko",
+    "url": "https://github.com/maksymshamko"
+  },
+  "contributors": [
+    {
+      "name": "Gainium",
+      "url": "https://github.com/Gainium"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Gainium/kucoin-api"
+  },
+  "homepage": "https://github.com/Gainium/kucoin-api",
   "license": "MIT",
   "private": true,
   "dependencies": {
