@@ -10,13 +10,14 @@
   "contributors": [
     {
       "name": "Gainium",
-      "url": "https://github.com/Gainium"
+      "url": "https://gainium.io/"
     }
   ],
   "repository": {
     "type": "git",
     "url": "https://github.com/Gainium/kucoin-api"
   },
+  "icon": "https://app.gainium.io/gainium-icon-192x192.png",
   "homepage": "https://github.com/Gainium/kucoin-api",
   "license": "MIT",
   "private": true,

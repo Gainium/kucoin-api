@@ -1,11 +1,13 @@
-# KucoinApi
+# 🚀 KucoinApi
+
+<img src="https://app.gainium.io/gainium-icon-192x192.png" alt="Gainium Logo" width="100" align="left" style="margin-right:10px;" />
 
 A TypeScript client for the Kucoin cryptocurrency exchange API, optimized for the Gainium application. This client provides access to essential spot and futures trading endpoints, account management, market data, and WebSocket feeds.
 
 **Author:** Maksym Shamko (https://github.com/maksymshamko)  
-**Organization:** Gainium (https://github.com/Gainium)
+**Organization:** Gainium (https://github.com/Gainium | https://gainium.io/)
 
-## Features
+## ✨ Features
 
 - Complete TypeScript typing for all API responses
 - Support for both Spot and Futures markets
@@ -14,7 +16,7 @@ A TypeScript client for the Kucoin cryptocurrency exchange API, optimized for th
 - Automatic retry mechanism for failed requests
 - Support for key Kucoin API endpoints used by Gainium
 
-## Installation
+## 📦 Installation
 
 ```bash
 # Install from npm once published
@@ -23,9 +25,9 @@ npm install @gainium/kucoin-api
 yarn add @gainium/kucoin-api
 ```
 
-## Usage
+## 🔧 Usage
 
-### Basic setup
+### 🔑 Basic setup
 
 ```typescript
 import KucoinApi from '@gainium/kucoin-api';
@@ -41,7 +43,7 @@ const kucoin = new KucoinApi({
 const publicKucoin = new KucoinApi();
 ```
 
-### Account Information
+### 💰 Account Information
 
 ```typescript
 // Get account balances
@@ -53,7 +55,7 @@ const futuresAccount = await kucoin.getFuturesAccounts();
 console.log(futuresAccount);
 ```
 
-### Trading
+### 📈 Trading
 
 ```typescript
 // Place a limit order
@@ -79,7 +81,7 @@ const marketOrder = await kucoin.placeOrder({
 const cancelResult = await kucoin.cancelOrder({ id: 'order-id' });
 ```
 
-### Market Data
+### 📊 Market Data
 
 ```typescript
 // Get ticker for a symbol
@@ -97,7 +99,7 @@ const klines = await kucoin.getKlines({
 });
 ```
 
-### WebSockets
+### 🔌 WebSockets
 
 ```typescript
 // Subscribe to ticker updates
@@ -121,17 +123,17 @@ orderUnsubscribe();
 balanceUnsubscribe();
 ```
 
-## API Documentation
+## 📚 API Documentation
 
-### Implemented Endpoints
+### 🔍 Implemented Endpoints
 
-#### Account
+#### 💰 Account
 - `getAccounts()` - Get account balances
 - `getFuturesAccounts()` - Get futures account details
 - `getApiKey()` - Get API key information
 - `getAffiliateUserRebateInformation()` - Get affiliate rebate information
 
-#### Orders
+#### 📈 Orders
 - `placeOrder()` - Place a spot order
 - `placeFuturesOrder()` - Place a futures order
 - `cancelOrder()` - Cancel a spot order
@@ -146,7 +148,7 @@ balanceUnsubscribe();
 - `getFuturesOrderByClientId()` - Get a futures order by client ID
 - `listFills()` - Get list of order fills
 
-#### Market Data
+#### 📊 Market Data
 - `getSymbols()` - Get list of available spot symbols
 - `getFuturesSymbols()` - Get list of available futures symbols
 - `getTicker()` - Get ticker for a spot symbol
@@ -159,7 +161,7 @@ balanceUnsubscribe();
 - `getFuturesPositions()` - Get all futures positions
 - `getFuturesPositionBySymbol()` - Get position for a specific futures symbol
 
-#### WebSockets
+#### 🔌 WebSockets
 - `ws().ticker()` - Subscribe to spot ticker updates
 - `ws().tickerAll()` - Subscribe to all spot tickers
 - `ws().futuresTicker()` - Subscribe to futures ticker updates
