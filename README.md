@@ -1,6 +1,6 @@
 # 🚀 KucoinApi
 
-<img src="https://app.gainium.io/gainium-icon-192x192.png" alt="Gainium Logo" width="100" align="left" style="margin-right:10px;" />
+<img src="https://app.gainium.io/gainium-icon-192x192.png" alt="Gainium Logo" width="100" />
 
 A TypeScript client for the Kucoin cryptocurrency exchange API, optimized for the Gainium application. This client provides access to essential spot and futures trading endpoints, account management, market data, and WebSocket feeds.
 
