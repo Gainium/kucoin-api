@@ -2,10 +2,44 @@
   "name": "@gainium/kucoin-api",
   "version": "1.0.0",
   "description": "TypeScript client for the Kucoin cryptocurrency exchange API",
-  "main": "index.ts",
+  "keywords": [
+    "kucoin",
+    "api",
+    "cryptocurrency",
+    "exchange",
+    "trading",
+    "typescript",
+    "websocket",
+    "rest-api",
+    "gainium"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
+    }
+  },
+  "files": [
+    "dist/**/*",
+    "scripts/**/*",
+    "tsconfig.json",
+    "README.md",
+    "LICENSE"
+  ],
   "author": {
     "name": "Maksym Shamko",
     "url": "https://github.com/maksymshamko"
+  },
+  "organization": {
+    "name": "Gainium",
+    "url": "https://gainium.io/",
+    "github": "https://github.com/Gainium"
   },
   "contributors": [
     {
@@ -15,12 +49,17 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Gainium/kucoin-api"
+    "url": "git+https://github.com/Gainium/kucoin-api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Gainium/kucoin-api/issues"
+  },
+  "homepage": "https://github.com/Gainium/kucoin-api#readme",
+  "engines": {
+    "node": ">=16.0.0"
   },
   "icon": "https://app.gainium.io/gainium-icon-192x192.png",
-  "homepage": "https://github.com/Gainium/kucoin-api",
   "license": "MIT",
-  "private": true,
   "dependencies": {
     "crypto": "^1.0.1",
     "isomorphic-unfetch": "^3.1.0",
@@ -30,20 +69,30 @@
     "uuid": "^9.0.0"
   },
   "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "build:watch": "tsc --project tsconfig.json --watch",
+    "clean": "rm -rf dist",
+    "lint": "tsc --project tsconfig.json --noEmit",
+    "lint:fix": "prettier --write . && eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "./scripts/build-if-needed.sh",
+    "build:if-needed": "./scripts/build-if-needed.sh",
+    "rebuild": "npm run clean && npm run build",
+    "prepublishOnly": "npm run clean && npm run build",
     "pull": "git pull origin master",
-    "push": "git push origin master",
-    "lint": "tsc --project tsconfig.json --noEmit && eslint .",
-    "lint:fix": "eslint . --fix"
+    "push": "git push origin master"
   },
   "devDependencies": {
-    "@types/node": "^18.7.15",
-    "@types/uuid": "^8.3.4",
-    "@typescript-eslint/eslint-plugin": "^5.36.2",
-    "@typescript-eslint/parser": "^5.36.2",
-    "eslint": "^8.23.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-prettier": "^4.2.1",
-    "prettier": "^2.7.1",
-    "typescript": "^4.8.2"
+    "@types/node": "^22.15.24",
+    "@types/uuid": "^9.0.8",
+    "@typescript-eslint/eslint-plugin": "^8.33.0",
+    "@typescript-eslint/parser": "^8.33.0",
+    "eslint": "^9.27.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.4.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.3"
   }
 }

@@ -4,12 +4,13 @@
     "allowJs": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
+    "noEmit": false,
     "esModuleInterop": true,
     "module": "commonjs",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "outDir": "lib",
+    "outDir": "dist",
+    "declaration": true,
     "allowSyntheticDefaultImports": true,
     "jsx": "preserve",
     "alwaysStrict": true,
@@ -22,6 +23,6 @@
     "baseUrl": ".",
     "experimentalDecorators": true
   },
-  "exclude": ["node_modules"],
+  "exclude": ["node_modules", "dist"],
   "include": ["**/*.ts", "**/*.tsx"]
 }
