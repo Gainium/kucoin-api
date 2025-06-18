@@ -61,12 +61,11 @@
   "icon": "https://app.gainium.io/gainium-icon-192x192.png",
   "license": "MIT",
   "dependencies": {
-    "crypto": "^1.0.1",
     "isomorphic-unfetch": "^3.1.0",
     "isomorphic-ws": "^5.0.0",
     "query-string": "^7.1.1",
     "reconnecting-websocket": "^4.4.0",
-    "uuid": "^9.0.0",
+    "uuid": "^11.1.0",
     "ws": "^8.18.2"
   },
   "scripts": {
@@ -89,7 +88,7 @@
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.29.0",
     "@types/node": "^22.15.24",
-    "@types/uuid": "^9.0.8",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.34.1",
     "@typescript-eslint/parser": "^8.34.1",
     "eslint": "^9.27.0",
