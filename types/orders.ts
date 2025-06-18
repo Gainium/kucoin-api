@@ -37,6 +37,8 @@ export interface CommonOrderConfig {
   remark?: string
   stp?: string
   tradeType?: TradeType
+  reduceOnly?: boolean
+  tags?: string
 }
 
 export interface OrderResponse {
@@ -51,7 +53,7 @@ export interface KucoinOrder {
   id: string
   symbol: string
   opType: string
-  type: string
+  type: OrderType
   side: string
   price: string
   size: string
@@ -76,6 +78,8 @@ export interface KucoinOrder {
   createdAt: number
   tradeType: string
   status: string
+  reduceOnly?: boolean
+  dealValue?: string
 }
 
 export interface ListOrders {
@@ -86,30 +90,31 @@ export interface ListOrders {
   items: KucoinOrder[]
 }
 
+export type Fill = {
+  symbol: string
+  tradeId: string
+  orderId: string
+  counterOrderId: string
+  side: OrderSide
+  price: string
+  size: string
+  funds: string
+  type: OrderType
+  fee: string
+  feeCurrency: string
+  stop: StopType
+  liquidity: Liquidity
+  forceTaker: boolean
+  createdAt: number
+  tradeType: TradeType
+}
+
 export interface ListFills {
   currentPage: number
   pageSize: number
   totalNum: number
   totalPage: number
-  items: {
-    symbol: string
-    tradeId: string
-    orderId: string
-    counterOrderId: string
-    side: string
-    liquidity: string
-    forceTaker: boolean
-    price: string
-    size: string
-    funds: string
-    fee: string
-    feeRate: string
-    feeCurrency: string
-    stop: string
-    type: string
-    createdAt: number
-    tradeType: string
-  }[]
+  items: Fill[]
 }
 
 export interface ExecutionReport {
@@ -156,7 +161,7 @@ export interface FuturesOrder {
   cummulativeQuoteQty: string
   status: string
   timeInForce: string
-  type: string
+  type: OrderType
   reduceOnly: boolean
   positionSide: string
   closePosition: boolean

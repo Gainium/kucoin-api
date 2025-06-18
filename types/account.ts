@@ -30,16 +30,13 @@ export interface FuturesAccountDetails {
 }
 
 export interface APIKeyResponse {
-  instanceServers: [
-    {
-      endpoint: string
-      protocol: string
-      encrypt: boolean
-      pingInterval: number
-      pingTimeout: number
-    },
-  ]
-  token: string
+  remark: string
+  apiKey: string
+  apiVersion: number
+  permission: string
+  createdAt: number
+  uid: number
+  isMaster: boolean
 }
 
 export interface OutboundAccountPosition {

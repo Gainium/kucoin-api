@@ -156,4 +156,5 @@ export interface FuturesKucoinSymbols {
   highPrice: number
   priceChgPct: number
   priceChg: number
+  supportCross?: boolean
 }
