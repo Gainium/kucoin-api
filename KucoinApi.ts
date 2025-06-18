@@ -1528,15 +1528,15 @@ class KucoinApi {
           `${msg.remainSize}` === '0')
           ? 'FILLED'
           : (msg.type === 'match' && msg.status === 'match') ||
-            (msg.type === 'match' && msg.status === 'open') ||
-            (openTypes.includes(msg.type) &&
-              openStatuses.includes(msg.status) &&
-              msg.filledSize &&
-              `${msg.filledSize}` !== '0')
-          ? 'PARTIALLY_FILLED'
-          : openTypes.includes(msg.type) && openStatuses.includes(msg.status)
-          ? 'NEW'
-          : 'CANCELED',
+              (msg.type === 'match' && msg.status === 'open') ||
+              (openTypes.includes(msg.type) &&
+                openStatuses.includes(msg.status) &&
+                msg.filledSize &&
+                `${msg.filledSize}` !== '0')
+            ? 'PARTIALLY_FILLED'
+            : openTypes.includes(msg.type) && openStatuses.includes(msg.status)
+              ? 'NEW'
+              : 'CANCELED',
       orderType: msg.orderType === 'limit' ? 'LIMIT' : 'MARKET',
       originalClientOrderId: msg.clientOid,
       price,
