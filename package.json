@@ -1,6 +1,6 @@
 {
   "name": "@gainium/kucoin-api",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "TypeScript client for the Kucoin cryptocurrency exchange API",
   "keywords": [
     "kucoin",
