@@ -251,7 +251,7 @@ class KucoinApi {
       headers['KC-API-KEY'] = this.key
       headers['KC-API-PASSPHRASE'] = passphraseResult
       headers['KC-API-KEY-VERSION'] = '2'
-      if (this.broker) {
+      if (this.broker?.futures?.secret || this.broker?.spot?.secret) {
         headers['KC-API-PARTNER'] = futures
           ? this.broker.futures.id
           : this.broker.spot.id
