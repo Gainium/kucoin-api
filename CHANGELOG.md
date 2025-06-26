@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.4] - 2025-06-26
 
+### Changed
+
+- Update kucoin-api dependency to 1.0.4 with broker partner header condition fix (check secrets existence)
 - Fixed broker partner header condition to check for secrets existence
 
 ## [1.0.3] - 2025-06-25
