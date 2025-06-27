@@ -27,11 +27,31 @@ if [ ! -f "$BUILD_MARKER" ]; then
     exit 0
 fi
 
-# Find the newest source file
-NEWEST_SRC=$(find "$SRC_DIR" -name "*.ts" -not -path "*/node_modules/*" -not -path "*/dist/*" -type f -exec stat -f %m {} \; | sort -n | tail -1)
-BUILD_TIME=$(stat -f %m "$BUILD_MARKER" 2>/dev/null || echo 0)
+# Function to get file modification time (cross-platform)
+get_mtime() {
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        stat -f %m "$1" 2>/dev/null || echo 0
+    else
+        # Linux
+        stat -c %Y "$1" 2>/dev/null || echo 0
+    fi
+}
 
-if [ "$NEWEST_SRC" -gt "$BUILD_TIME" ]; then
+# Check if any TypeScript source files are newer than build marker
+NEEDS_BUILD=false
+
+# Find all TypeScript files and check if any are newer than build marker
+BUILD_TIME=$(get_mtime "$BUILD_MARKER")
+while IFS= read -r -d '' file; do
+    FILE_TIME=$(get_mtime "$file")
+    if [ "$FILE_TIME" -gt "$BUILD_TIME" ]; then
+        NEEDS_BUILD=true
+        break
+    fi
+done < <(find "$SRC_DIR" -name "*.ts" -not -path "*/node_modules/*" -not -path "*/dist/*" -type f -print0)
+
+if [ "$NEEDS_BUILD" = true ]; then
     echo "📦 Building @gainium/kucoin-api: source files newer than build"
     npm run build
     touch "$BUILD_MARKER"
@@ -40,8 +60,8 @@ fi
 
 # Check if tsconfig.json is newer
 if [ -f "$PROJECT_DIR/tsconfig.json" ]; then
-    TSCONFIG_TIME=$(stat -f %m "$PROJECT_DIR/tsconfig.json")
-    BUILD_TIME=$(stat -f %m "$BUILD_MARKER" 2>/dev/null || echo 0)
+    TSCONFIG_TIME=$(get_mtime "$PROJECT_DIR/tsconfig.json")
+    BUILD_TIME=$(get_mtime "$BUILD_MARKER")
     
     if [ "$TSCONFIG_TIME" -gt "$BUILD_TIME" ]; then
         echo "📦 Building @gainium/kucoin-api: tsconfig.json updated"
