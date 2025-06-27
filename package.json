@@ -1,6 +1,6 @@
 {
   "name": "@gainium/kucoin-api",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "TypeScript client for the Kucoin cryptocurrency exchange API",
   "keywords": [
     "kucoin",
@@ -61,9 +61,9 @@
   "icon": "https://app.gainium.io/gainium-icon-192x192.png",
   "license": "MIT",
   "dependencies": {
-    "isomorphic-unfetch": "^3.1.0",
+    "isomorphic-unfetch": "^4.0.2",
     "isomorphic-ws": "^5.0.0",
-    "query-string": "^7.1.1",
+    "query-string": "^9.2.1",
     "reconnecting-websocket": "^4.4.0",
     "uuid": "^11.1.0",
     "ws": "^8.18.2"
