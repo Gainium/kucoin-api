@@ -9,6 +9,11 @@ export interface GetAccountsInput {
   type?: string
 }
 
+export interface SwtichMarginModeInput {
+  symbol: string
+  marginMode: 'ISOLATED' | 'CROSS'
+}
+
 export interface AccountBalance {
   id: string
   currency: string

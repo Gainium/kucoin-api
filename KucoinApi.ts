@@ -73,6 +73,7 @@ import {
   FuturesPosition,
   WSBalance,
   WSKlinesUpdate,
+  SwtichMarginModeInput,
 } from './types'
 
 const mutex = new IdMutex()
@@ -421,6 +422,26 @@ class KucoinApi {
     return await this.sendRequest<FuturesAccountDetails>(
       `/api/v1/account-overview`,
       'GET',
+      params,
+      'private',
+      true,
+    )
+  }
+
+  /*
+   * Switch Margin Mode - Futures
+   * GET /api/v2/position/changeMarginMode
+   */
+  /**
+   * Modify the margin mode of the current symbol.
+   *
+   * @param params - Query parameters
+   * @returns Margin mode
+   */
+  public async changeMarginMode(params: SwtichMarginModeInput) {
+    return await this.sendRequest<SwtichMarginModeInput>(
+      `/api/v2/position/changeMarginMode`,
+      'POST',
       params,
       'private',
       true,
