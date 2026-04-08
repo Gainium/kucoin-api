@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-04-08
+
+### Added
+
+- Futures candle stream
+## [1.0.9] - 2025-07-10
+
+### Added
+
+- Added Switch Margin Mode method (`changeMarginMode`) for futures trading
+- Added `SwitchMarginModeInput` type for margin mode switching parameters
+- Supports switching between ISOLATED and CROSS margin modes
+
 ## [1.0.8] - 2025-07-02
 
 ### Changed

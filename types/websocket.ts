@@ -9,6 +9,7 @@ export enum WSSubjectEnum {
   orderChange = 'orderChange',
   balance = 'account.balance',
   klines = 'trade.candles.update',
+  futuresKlines = 'candle.stick',
   futuresBalance = 'availableBalance.change',
   ticker = 'ticker',
   position = 'position.change',
@@ -25,6 +26,7 @@ export enum WSMessageTopicEnum {
   orderChange = '/spotMarket/tradeOrdersV2',
   balance = '/account/balance',
   klines = '/market/candles:',
+  futuresKlines = '/contractMarket/limitCandle:',
   futuresBalance = '/contractAccount/wallet',
   futuresTicker = '/contractMarket/ticker:',
   futuresOrder = '/contractMarket/tradeOrders',
@@ -145,6 +147,13 @@ export interface FuturesBalanceWsMessageData {
   timestamp: number
 }
 
+export interface WSFuturesKlines {
+  type: WSTypesEnum.message
+  topic: string
+  subject: WSSubjectEnum.futuresKlines
+  data: WSKlinesUpdate
+}
+
 export interface WSFuturesBalanceMessage {
   topic: WSMessageTopicEnum.futuresBalance
   subject: WSSubjectEnum.futuresBalance
@@ -252,6 +261,7 @@ export type WSMessage =
   | WSOrderChangeMessage
   | WSBalanceMessage
   | WSKlines
+  | WSFuturesKlines
   | WSFuturesBalanceMessage
   | WSFuturesTickerMessage
   | WSFuturesOrderMessage

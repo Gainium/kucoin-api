@@ -65,6 +65,7 @@ import {
   WSUpdateOrder,
   WSOrderChangeMessage,
   WSKlines,
+  WSFuturesKlines,
   WSFuturesBalanceMessage,
   WSFuturesTickerMessage,
   WSFuturesOrderMessage,
@@ -73,6 +74,7 @@ import {
   FuturesPosition,
   WSBalance,
   WSKlinesUpdate,
+  SwtichMarginModeInput,
 } from './types'
 
 const mutex = new IdMutex()
@@ -421,6 +423,26 @@ class KucoinApi {
     return await this.sendRequest<FuturesAccountDetails>(
       `/api/v1/account-overview`,
       'GET',
+      params,
+      'private',
+      true,
+    )
+  }
+
+  /*
+   * Switch Margin Mode - Futures
+   * GET /api/v2/position/changeMarginMode
+   */
+  /**
+   * Modify the margin mode of the current symbol.
+   *
+   * @param params - Query parameters
+   * @returns Margin mode
+   */
+  public async changeMarginMode(params: SwtichMarginModeInput) {
+    return await this.sendRequest<SwtichMarginModeInput>(
+      `/api/v2/position/changeMarginMode`,
+      'POST',
       params,
       'private',
       true,
@@ -1404,6 +1426,40 @@ class KucoinApi {
    * @param count - Retry count
    * @private
    */
+  /**
+   * Build kucoin kline ws topics from a flexible input. Symbols sharing the
+   * same `type` are grouped into a single comma-separated topic; different
+   * types produce separate topics. Allows callers to subscribe to a mixed
+   * batch (e.g. some 1min and some 5min) in one call.
+   *
+   * @private
+   */
+  private buildKlineTopics(
+    prefix: string,
+    params:
+      | { symbol: string | string[]; type: string }
+      | { symbol: string; type: string }[],
+  ): string[] {
+    const byType = new Map<string, string[]>()
+    if (Array.isArray(params)) {
+      for (const p of params) {
+        const arr = byType.get(p.type) ?? []
+        arr.push(p.symbol)
+        byType.set(p.type, arr)
+      }
+    } else {
+      const symbols = Array.isArray(params.symbol)
+        ? params.symbol
+        : [params.symbol]
+      byType.set(params.type, symbols)
+    }
+    const topics: string[] = []
+    for (const [type, symbols] of byType) {
+      topics.push(`${prefix}${symbols.join(',')}_${type}`)
+    }
+    return topics
+  }
+
   @IdMute(mutex, () => 'subscribe')
   private async handleSubscribe(
     type: RequestType,
@@ -1847,7 +1903,9 @@ class KucoinApi {
        * @returns Unsubscribe function
        */
       klines: async (
-        params: { symbol: string; type: string },
+        params:
+          | { symbol: string | string[]; type: string }
+          | { symbol: string; type: string }[],
         callback: (msg: WSKlinesUpdate) => void | Promise<void>,
         onError?: (msg: string) => void,
       ) => {
@@ -1866,10 +1924,53 @@ class KucoinApi {
             })
           }
         }
-        const topic = `/market/candles:${params.symbol}_${params.type}`
+        const topics = this.buildKlineTopics('/market/candles:', params)
         await this.getWs('public', undefined, token, onError)
-        this.handleSubscribe('public', topic, thisCb)
-        return () => this.handleUnsubscribe('public', topic)
+        this.handleSubscribe('public', topics, thisCb)
+        return () => this.handleUnsubscribe('public', topics)
+      },
+
+      /**
+       * Subscribe to futures kline/candlestick updates
+       *
+       * @param params - Kline parameters (symbol like XBTUSDTM, type like 1min)
+       * @param callback - Kline callback
+       * @param onError - Error callback
+       * @returns Unsubscribe function
+       */
+      futuresKlines: async (
+        params:
+          | { symbol: string | string[]; type: string }
+          | { symbol: string; type: string }[],
+        callback: (msg: WSKlinesUpdate) => void | Promise<void>,
+        onError?: (msg: string) => void,
+      ) => {
+        const thisCb = (msg: WSMessage) => {
+          if (
+            msg.type === WSTypesEnum.message &&
+            (msg as WSFuturesKlines).subject === WSSubjectEnum.futuresKlines &&
+            (msg as WSFuturesKlines).topic.startsWith(
+              WSMessageTopicEnum.futuresKlines,
+            )
+          ) {
+            const m = msg as WSFuturesKlines
+            if (this.lastData.get(m.topic) === m.data.time) {
+              return
+            }
+            this.lastData.set(m.topic, m.data.time)
+            callback({
+              ...m.data,
+              interval: m.topic.split('_')[1],
+            })
+          }
+        }
+        const topics = this.buildKlineTopics(
+          '/contractMarket/limitCandle:',
+          params,
+        )
+        await this.getWs('public', undefined, token, onError)
+        this.handleSubscribe('public', topics, thisCb)
+        return () => this.handleUnsubscribe('public', topics)
       },
 
       /**
