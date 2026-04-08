@@ -1427,10 +1427,11 @@ class KucoinApi {
    * @private
    */
   /**
-   * Build kucoin kline ws topics from a flexible input. Symbols sharing the
-   * same `type` are grouped into a single comma-separated topic; different
-   * types produce separate topics. Allows callers to subscribe to a mixed
-   * batch (e.g. some 1min and some 5min) in one call.
+   * Build a single kucoin kline ws topic from a flexible input. Kucoin's
+   * `topic` field accepts a comma-separated list of `SYMBOL_TYPE` items
+   * within the same channel, so a mixed batch (different symbols and/or
+   * different intervals) collapses into ONE topic, sent in ONE subscribe
+   * message.
    *
    * @private
    */
@@ -1440,24 +1441,31 @@ class KucoinApi {
       | { symbol: string | string[]; type: string }
       | { symbol: string; type: string }[],
   ): string[] {
-    const byType = new Map<string, string[]>()
+    const items: string[] = []
+    const seen = new Set<string>()
+    const push = (symbol: string, type: string) => {
+      const item = `${symbol}_${type}`
+      if (!seen.has(item)) {
+        seen.add(item)
+        items.push(item)
+      }
+    }
     if (Array.isArray(params)) {
       for (const p of params) {
-        const arr = byType.get(p.type) ?? []
-        arr.push(p.symbol)
-        byType.set(p.type, arr)
+        push(p.symbol, p.type)
       }
     } else {
       const symbols = Array.isArray(params.symbol)
         ? params.symbol
         : [params.symbol]
-      byType.set(params.type, symbols)
+      for (const s of symbols) {
+        push(s, params.type)
+      }
     }
-    const topics: string[] = []
-    for (const [type, symbols] of byType) {
-      topics.push(`${prefix}${symbols.join(',')}_${type}`)
+    if (!items.length) {
+      return []
     }
-    return topics
+    return [`${prefix}${items.join(',')}`]
   }
 
   @IdMute(mutex, () => 'subscribe')

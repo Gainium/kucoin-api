@@ -30,29 +30,29 @@ yarn add @gainium/kucoin-api
 ### 🔑 Basic setup
 
 ```typescript
-import KucoinApi from '@gainium/kucoin-api';
+import KucoinApi from '@gainium/kucoin-api'
 
 // Initialize client with API keys
 const kucoin = new KucoinApi({
   key: 'YOUR_API_KEY',
   secret: 'YOUR_API_SECRET',
-  passphrase: 'YOUR_API_PASSPHRASE'
-});
+  passphrase: 'YOUR_API_PASSPHRASE',
+})
 
 // For public endpoints, you can initialize without keys
-const publicKucoin = new KucoinApi();
+const publicKucoin = new KucoinApi()
 ```
 
 ### 💰 Account Information
 
 ```typescript
 // Get account balances
-const balances = await kucoin.getAccounts();
-console.log(balances);
+const balances = await kucoin.getAccounts()
+console.log(balances)
 
 // Get futures account details
-const futuresAccount = await kucoin.getFuturesAccounts();
-console.log(futuresAccount);
+const futuresAccount = await kucoin.getFuturesAccounts()
+console.log(futuresAccount)
 ```
 
 ### 📈 Trading
@@ -65,8 +65,8 @@ const order = await kucoin.placeOrder({
   symbol: 'BTC-USDT',
   type: 'limit',
   price: '30000',
-  size: '0.001'
-});
+  size: '0.001',
+})
 
 // Place a market order
 const marketOrder = await kucoin.placeOrder({
@@ -74,29 +74,29 @@ const marketOrder = await kucoin.placeOrder({
   side: 'buy',
   symbol: 'BTC-USDT',
   type: 'market',
-  funds: '30'  // Specify funds for quote currency amount
-});
+  funds: '30', // Specify funds for quote currency amount
+})
 
 // Cancel an order
-const cancelResult = await kucoin.cancelOrder({ id: 'order-id' });
+const cancelResult = await kucoin.cancelOrder({ id: 'order-id' })
 ```
 
 ### 📊 Market Data
 
 ```typescript
 // Get ticker for a symbol
-const ticker = await kucoin.getTicker('BTC-USDT');
+const ticker = await kucoin.getTicker('BTC-USDT')
 
 // Get all tickers
-const allTickers = await kucoin.getAllTickers();
+const allTickers = await kucoin.getAllTickers()
 
 // Get klines/candlestick data
 const klines = await kucoin.getKlines({
   symbol: 'BTC-USDT',
   startAt: 1609459200,
   endAt: 1609545600,
-  type: '1hour'
-});
+  type: '1hour',
+})
 ```
 
 ### 🔌 WebSockets
@@ -104,23 +104,23 @@ const klines = await kucoin.getKlines({
 ```typescript
 // Subscribe to ticker updates
 const unsubscribe = await kucoin.ws().ticker(['BTC-USDT'], (ticker) => {
-  console.log('Ticker update:', ticker);
-});
+  console.log('Ticker update:', ticker)
+})
 
 // Subscribe to order updates
 const orderUnsubscribe = await kucoin.ws().order((orderUpdate) => {
-  console.log('Order update:', orderUpdate);
-});
+  console.log('Order update:', orderUpdate)
+})
 
 // Subscribe to account balance updates
 const balanceUnsubscribe = await kucoin.ws().balance((balanceUpdate) => {
-  console.log('Balance update:', balanceUpdate);
-});
+  console.log('Balance update:', balanceUpdate)
+})
 
 // Unsubscribe when no longer needed
-unsubscribe();
-orderUnsubscribe();
-balanceUnsubscribe();
+unsubscribe()
+orderUnsubscribe()
+balanceUnsubscribe()
 ```
 
 ## 📚 API Documentation
@@ -128,12 +128,14 @@ balanceUnsubscribe();
 ### 🔍 Implemented Endpoints
 
 #### 💰 Account
+
 - `getAccounts()` - Get account balances
 - `getFuturesAccounts()` - Get futures account details
 - `getApiKey()` - Get API key information
 - `getAffiliateUserRebateInformation()` - Get affiliate rebate information
 
 #### 📈 Orders
+
 - `placeOrder()` - Place a spot order
 - `placeFuturesOrder()` - Place a futures order
 - `cancelOrder()` - Cancel a spot order
@@ -149,6 +151,7 @@ balanceUnsubscribe();
 - `listFills()` - Get list of order fills
 
 #### 📊 Market Data
+
 - `getSymbols()` - Get list of available spot symbols
 - `getFuturesSymbols()` - Get list of available futures symbols
 - `getTicker()` - Get ticker for a spot symbol
@@ -162,6 +165,7 @@ balanceUnsubscribe();
 - `getFuturesPositionBySymbol()` - Get position for a specific futures symbol
 
 #### 🔌 WebSockets
+
 - `ws().ticker()` - Subscribe to spot ticker updates
 - `ws().tickerAll()` - Subscribe to all spot tickers
 - `ws().futuresTicker()` - Subscribe to futures ticker updates
