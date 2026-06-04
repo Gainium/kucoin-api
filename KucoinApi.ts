@@ -75,6 +75,9 @@ import {
   WSBalance,
   WSKlinesUpdate,
   SwtichMarginModeInput,
+  GetPositionModeResponse,
+  SwitchPositionModeInput,
+  SwitchPositionModeResponse,
 } from './types'
 
 const mutex = new IdMutex()
@@ -442,6 +445,49 @@ class KucoinApi {
   public async changeMarginMode(params: SwtichMarginModeInput) {
     return await this.sendRequest<SwtichMarginModeInput>(
       `/api/v2/position/changeMarginMode`,
+      'POST',
+      params,
+      'private',
+      true,
+    )
+  }
+
+  /*
+   * Get Position Mode - Futures
+   * GET /api/v2/position/getPositionMode
+   */
+  /**
+   * Query the position mode of the account.
+   * Applies to all futures trading pairs.
+   * 0 -- One-Way Mode (one-way position), 1 -- Hedge Mode (two-way position)
+   *
+   * @returns Position mode
+   */
+  public async getPositionMode() {
+    return await this.sendRequest<GetPositionModeResponse>(
+      `/api/v2/position/getPositionMode`,
+      'GET',
+      {},
+      'private',
+      true,
+    )
+  }
+
+  /*
+   * Switch Position Mode - Futures
+   * POST /api/v2/position/switchPositionMode
+   */
+  /**
+   * Toggle between one-way mode and hedge mode for the position mode.
+   * Applies to all futures trading pairs.
+   * '0' -- one-way mode, '1' -- hedge mode
+   *
+   * @param params - Position mode settings
+   * @returns Position mode
+   */
+  public async switchPositionMode(params: SwitchPositionModeInput) {
+    return await this.sendRequest<SwitchPositionModeResponse>(
+      `/api/v2/position/switchPositionMode`,
       'POST',
       params,
       'private',

@@ -14,6 +14,21 @@ export interface SwtichMarginModeInput {
   marginMode: 'ISOLATED' | 'CROSS'
 }
 
+/**
+ * Position mode: 0 -- One-Way Mode (one-way position), 1 -- Hedge Mode (two-way position)
+ */
+export interface GetPositionModeResponse {
+  positionMode: 0 | 1
+}
+
+export interface SwitchPositionModeInput {
+  positionMode: '0' | '1'
+}
+
+export interface SwitchPositionModeResponse {
+  positionMode: '0' | '1'
+}
+
 export interface AccountBalance {
   id: string
   currency: string
