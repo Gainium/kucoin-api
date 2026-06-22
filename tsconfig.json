@@ -8,6 +8,7 @@
     "esModuleInterop": true,
     "module": "commonjs",
     "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "resolveJsonModule": true,
     "outDir": "dist",
     "declaration": true,
@@ -20,7 +21,6 @@
     "strict": true,
     "target": "esnext",
     "isolatedModules": false,
-    "baseUrl": ".",
     "experimentalDecorators": true
   },
   "exclude": ["node_modules", "dist"],
