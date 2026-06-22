@@ -57,6 +57,7 @@ import {
   Kline,
   KucoinSymbol,
   FuturesKucoinSymbols,
+  FundingRateHistory,
   WSSubjectEnum,
   WSTypesEnum,
   WSMessageTopicEnum,
@@ -651,6 +652,32 @@ class KucoinApi {
       '/api/v1/contracts/active',
       'GET',
       {},
+      'public',
+      true,
+    )
+  }
+
+  /*
+   * Get Public Funding History
+   * GET /api/v1/contract/funding-rates
+   */
+  /**
+   * Get the settled funding rate at each settlement point within a time range
+   * for a futures contract. Public endpoint, futures host. `from`/`to` are
+   * required by KuCoin and are in milliseconds (inclusive).
+   *
+   * @param params - symbol (e.g. XBTUSDTM) and from/to window in ms
+   * @returns Funding rate history, ascending by timepoint
+   */
+  public async getFundingRateHistory(params: {
+    symbol: string
+    from: number
+    to: number
+  }) {
+    return await this.sendRequest<FundingRateHistory[]>(
+      '/api/v1/contract/funding-rates',
+      'GET',
+      params,
       'public',
       true,
     )

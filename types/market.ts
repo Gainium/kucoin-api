@@ -158,3 +158,15 @@ export interface FuturesKucoinSymbols {
   priceChg: number
   supportCross?: boolean
 }
+
+/**
+ * One settled funding rate entry returned by the public funding history endpoint.
+ * GET /api/v1/contract/funding-rates
+ */
+export interface FundingRateHistory {
+  symbol: string
+  /** Settled funding rate as a fraction, e.g. 0.000123 */
+  fundingRate: number
+  /** Settlement time point in milliseconds */
+  timepoint: number
+}
