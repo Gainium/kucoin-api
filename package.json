@@ -77,13 +77,12 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "./scripts/build-if-needed.sh",
     "build:if-needed": "./scripts/build-if-needed.sh",
     "rebuild": "npm run clean && npm run build",
     "prepublishOnly": "npm run clean && npm run build",
     "pull": "git pull origin master",
     "push": "git push origin master",
-    "prepare": "husky"
+    "prepare": "husky; npm run build"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
