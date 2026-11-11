@@ -59,6 +59,19 @@ export interface APIKeyResponse {
   isMaster: boolean
 }
 
+/**
+ * Account mode as KuCoin reports it. `UNIFIED` is a Unified Trading Account
+ * (UTA): KuCoin answers its trading requests only on the UTA V2 endpoints,
+ * not the classic spot and futures ones this client calls.
+ */
+export type AccountMode = 'CLASSIC' | 'UNIFIED'
+
+export interface AccountModeResponse {
+  selfAccountMode: AccountMode
+  unifiedSubAccount: number[]
+  classicSubAccount: number[]
+}
+
 export interface OutboundAccountPosition {
   eventType: 'outboundAccountPosition'
   eventTime: number

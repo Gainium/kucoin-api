@@ -41,6 +41,7 @@ import {
   BaseFee,
   AffiliateUserRebateInformation,
   APIKeyResponse,
+  AccountModeResponse,
   OrderActiveStatus,
   OrderSide,
   TradeType,
@@ -592,6 +593,27 @@ class KucoinApi {
   public async getApiKey() {
     return await this.sendRequest<APIKeyResponse>(
       `/api/v1/user/api-key`,
+      'GET',
+      {},
+      'private',
+    )
+  }
+
+  /*
+   * Get Account Mode
+   * GET /api/ua/v2/account/mode
+   */
+  /**
+   * Whether the account is in Classic or Unified Trading Account (UTA) mode,
+   * plus which sub-accounts are in each. Needs only the General (read)
+   * permission. Rate-limit weight 30 (Management pool), so callers should ask
+   * once per key rather than per request.
+   *
+   * @returns The account mode and the sub-account lists
+   */
+  public async getAccountMode() {
+    return await this.sendRequest<AccountModeResponse>(
+      `/api/ua/v2/account/mode`,
       'GET',
       {},
       'private',
